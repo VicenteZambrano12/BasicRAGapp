@@ -1,0 +1,63 @@
+version: "3.9"
+
+services:
+  app:
+    build: .
+    container_name: pauhelper-app
+    ports:
+      - "8000:8000"
+    environment:
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - PORT=8000
+      # Vector DB Configuration
+      - VECTOR_DB_TYPE=${VECTOR_DB_TYPE:-qdrant}
+      # Qdrant configuration (local by default)
+      - QDRANT_HOST=${QDRANT_HOST:-qdrant}
+      - QDRANT_PORT=${QDRANT_PORT:-6333}
+      # Only set these if using Qdrant Cloud
+      # - QDRANT_API_KEY=${QDRANT_API_KEY}
+      # - QDRANT_URL=${QDRANT_URL}
+      # Pinecone (uncomment if using)
+      # - PINECONE_API_KEY=${PINECONE_API_KEY}
+      # - PINECONE_ENVIRONMENT=${PINECONE_ENVIRONMENT}
+      # - PINECONE_INDEX_NAME=${PINECONE_INDEX_NAME:-pauhelper}
+      # Vertex AI (uncomment if using)
+      # - VERTEX_PROJECT_ID=${VERTEX_PROJECT_ID}
+      # - VERTEX_LOCATION=${VERTEX_LOCATION:-us-central1}
+      # - VERTEX_INDEX_ENDPOINT=${VERTEX_INDEX_ENDPOINT}
+      # - GOOGLE_APPLICATION_CREDENTIALS=/app/gcp-key.json
+    depends_on:
+      - redis
+      - qdrant
+    command: ["./src/entrypoint.sh"]
+    volumes:
+      - .:/app
+      # Only mount if using GCP
+      # - ./gcp-key.json:/app/gcp-key.json:ro
+    tty: true
+
+  redis:
+    image: redis:7-alpine
+    container_name: pauhelper-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    command: ["redis-server", "--save", "60", "1", "--loglevel", "warning"]
+
+  qdrant:
+    image: qdrant/qdrant:latest
+    container_name: pauhelper-qdrant
+    ports:
+      - "6333:6333"
+      - "6334:6334"
+    volumes:
+      - qdrant_data:/qdrant/storage
+    environment:
+      - QDRANT__SERVICE__HTTP_PORT=6333
+      - QDRANT__SERVICE__GRPC_PORT=6334
+
+volumes:
+  redis_data:
+  qdrant_data:

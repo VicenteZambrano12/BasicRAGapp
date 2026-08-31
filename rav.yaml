@@ -1,0 +1,31 @@
+scripts:
+  runserver: uvicorn src.app:app --reload
+  installs: venv/bin/python -m pip install -r src/requirements.txt
+  test: pytest src/tests.py
+  build: docker build -f Dockerfile -t pauhelper .
+  empty-build: docker build -f Dockerfile.empty -t empty-py .
+  empty-shell: docker exec -it empty_py /bin/bash
+  empty-run: docker run -p 8001:8000 --rm --name empty_py -it empty-py
+  container_stage: docker run -e MODE=stage -p 8000:8000 --rm --name pauhelper -it pauhelper
+  container_prod: docker run -e PORT=8001  -e MODE=PRODA --env-file .env-prod  -p 8000:8001 --rm --name pauhelper -it pauhelper
+  run: docker run -p 8000:8000 --rm --name pauhelper -it pauhelper
+  update_prod_secrets:
+    - gcloud secrets versions add py_env_file --data-file .env-prod
+  build_run:
+    - rav run build
+    - rav run run
+  configure:
+    - gcloud auth configure-docker europe-southwest1-docker.pkg.dev
+    - gcloud artifacts repositories create pauhelper --repository-format=docker --location=europe-southwest1
+  push:
+    - docker build --platform=linux/amd64 -f Dockerfile -t pauhelper-amd64 .
+    - docker tag pauhelper-amd64 europe-southwest1-docker.pkg.dev/pauhelper/pauhelper/pauhelper:latest
+    - docker tag pauhelper-amd64 europe-southwest1-docker.pkg.dev/pauhelper/pauhelper/pauhelper:v1
+    - docker tag pauhelper-amd64 europe-southwest1-docker.pkg.dev/pauhelper/pauhelper/pauhelper:v1.120
+    - docker push europe-southwest1-docker.pkg.dev/pauhelper/pauhelper/pauhelper --all-tags
+  deploy:
+    - gcloud run deploy pauhelper-run --image=europe-southwest1-docker.pkg.dev/pauhelper/pauhelper/pauhelper:latest --allow-unauthenticated --region=europe-southwest1 --project=pauhelper
+  cloud_run_perms:
+    - gcloud secrets add-iam-policy-binding py_env_file --member='serviceAccount:60927173241-compute@developer.gserviceaccount.com' --role='roles/secretmanager.secretAccessor'
+  cloud_run_perms_remove:
+    - gcloud secrets remove-iam-policy-binding py_env_file --member='serviceAccount:60927173241-compute@developer.gserviceaccount.com' --role='roles/secretmanager.secretAccessor'
