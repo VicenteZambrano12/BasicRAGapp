@@ -10,45 +10,6 @@ from config.config_loader import config
 
 os.environ["GOOGLE_API_KEY"] = config("GOOGLE_API_KEY")
 
-def clean_text(text: str) -> str:
-    """
-    Clean text by removing invalid Unicode, surrogates, and SPECIFIC UNWANTED HEADERS.
-    """
-    if not isinstance(text, str):
-        return str(text)
-    
-    # 1. ELIMINAR TEXTO ESPECÍFICO (Encabezados/Nombres)
-    # Definimos las frases exactas que queremos borrar
-    unwanted_phrases = [
-        "BIOLOGÍA ANA GLORIA FERNÁNDEZ BELLOSO",
-        "2º BACHILLERATO DPTO BIOLOGÍA Y GEOLOGÍA.IES FERNANDO DE MENA",
-        "IES FERNANDO DE MENA",
-        "2º BACHILLERATO DPTO BIOLOGÍA Y GEOLOGÍA.",
-        "ANTONIO CALERO_2º Bach. _Hª_ DEL ARTE_TEMA_2_ARTE_PREHISTÓRICO",
-        "Academia de Enseñanza Laura’s",
-        "Rafa Bedia. Departamento de Lengua Castellana y Literatura",              
-        "IES José del Campo - AMPUERO ",
-        "Sexta edición corregida y aumentada (Edición 2024)"
-    ]
-    
-    for phrase in unwanted_phrases:
-        # Reemplazamos la frase por nada ("")
-        # Usamos re.IGNORECASE por si alguna letra cambia de mayúscula/minúscula
-        text = re.sub(re.escape(phrase), '', text, flags=re.IGNORECASE)
-
-    # 2. Limpieza estándar (Unicode y caracteres raros)
-    # Remove surrogate characters (U+D800 to U+DFFF)
-    text = text.encode('utf-8', errors='ignore').decode('utf-8', errors='ignore')
-    
-    # Remove other problematic characters
-    text = ''.join(char for char in text if char.isprintable() or char in '\n\t ')
-    
-    # 3. Limpieza de espacios excesivos
-    # Esto es importante para cerrar los huecos que dejan las frases borradas
-    text = re.sub(r'\n{3,}', '\n\n', text)
-    text = re.sub(r' {2,}', ' ', text)
-    
-    return text.strip()
 
 def extract_folder_and_subject(path: str):
     """Extract folder name and subject from file path."""
