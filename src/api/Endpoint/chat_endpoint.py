@@ -5,7 +5,7 @@ from typing import Dict, Optional
 from fastapi import APIRouter
 
 from src.api.DataClasses.chat_request import ChatRequest
-from src.api.system.chat.chat import execute_chat
+from src.system.chat.chat import execute_chat
 
 
 router = APIRouter()

@@ -4,7 +4,7 @@ from typing import Dict
 from fastapi import APIRouter
 
 from src.api.DataClasses.create_system_request import CreateSystemRequest
-from src.api.system.create_system.create_system import execute_create_system
+from src.system.create_system.create_system import execute_create_system
 
 
 router = APIRouter()
