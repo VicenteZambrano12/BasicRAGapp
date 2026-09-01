@@ -1,3 +1,5 @@
+"""FastAPI composition root: startup lifecycle, middleware, and route registration."""
+
 import logging
 import os
 from contextlib import asynccontextmanager
@@ -20,6 +22,8 @@ logger = logging.getLogger(__name__)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    """Load runtime resources on startup and clear volatile caches on shutdown."""
+
     logger.info("[STARTUP] ========== INITIALIZING APPLICATION ==========")
 
     logger.info("[STARTUP] Loading embeddings model...")

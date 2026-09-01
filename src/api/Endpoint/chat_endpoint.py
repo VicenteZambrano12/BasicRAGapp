@@ -1,10 +1,12 @@
+"""Chat endpoint with text/image handling, memory loading, and graph execution."""
+
 import json
 import logging
 from typing import Dict, Optional
 
 from fastapi import APIRouter, HTTPException
 
-from src.api.DatClasses.chat_request import ChatRequest
+from src.api.DataClasses.chat_request import ChatRequest
 from src.utils.image_read import image_read
 from src.utils.redis_funcs import (
     get_cache_key,
@@ -21,6 +23,8 @@ router = APIRouter()
 
 
 def _build_image_url(image_data: str, image_type: str) -> str:
+    """Normalize image input into a URL accepted by the chat model."""
+
     if image_type == "base64":
         base64_data = image_data
         mime_type = "image/jpeg"
@@ -55,6 +59,8 @@ def _build_image_url(image_data: str, image_type: str) -> str:
 
 @router.post("/chat", response_model=Dict[str, Optional[str]])
 async def chat(data: ChatRequest):
+    """Process a chat turn and return the assistant response text."""
+
     session_id, category, subject = data.session_id, data.category, data.subject
     cache_key = get_cache_key(session_id, category, subject)
     token_counter = get_token_counter()

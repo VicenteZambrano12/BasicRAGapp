@@ -1,8 +1,10 @@
+"""Endpoint that initializes and caches a graph for a given session context."""
+
 import logging
 from typing import Dict
 from fastapi import APIRouter, HTTPException
 
-from src.api.DatClasses.create_system_request import CreateSystemRequest
+from src.api.DataClasses.create_system_request import CreateSystemRequest
 from src.utils.create_system import create_system
 from src.utils.redis_funcs import (
     get_cache_key,
@@ -19,6 +21,8 @@ router = APIRouter()
 
 @router.post("/create_system", response_model=Dict[str, str])
 async def create_system_endpoint(data: CreateSystemRequest):
+    """Create or recover a graph instance and persist its configuration."""
+
     session_id, category, subject = data.session_id, data.category, data.subject
     cache_key = get_cache_key(session_id, category, subject)
 
