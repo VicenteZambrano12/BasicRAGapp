@@ -30,7 +30,7 @@ services:
     depends_on:
       - redis
       - qdrant
-    command: ["./src/entrypoint.sh"]
+    command: ["./entrypoint.sh"]
     volumes:
       - .:/app
       # Only mount if using GCP
