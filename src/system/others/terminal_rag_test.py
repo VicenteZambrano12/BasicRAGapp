@@ -4,7 +4,7 @@ import os
 import argparse
 import numpy as np
 from langchain_core.messages import HumanMessage, AIMessage
-from langchain_google_vertexai import VertexAIEmbeddings
+from langchain_google_genai import GoogleGenerativeAIEmbeddings
 
 from src.config.config_loader import config
 from src.utils.create_system import create_system
@@ -13,11 +13,11 @@ def load_embeddings_model():
     """Initialize the query embeddings model for debug visualization."""
     print("Loading Gemini Embeddings Model...")
     try:
-        embedding_model = config("EMBEDDING_MODEL", default="text-embedding-004")
-        model = VertexAIEmbeddings(
-            model_name=embedding_model,
-            project=config("GOOGLE_CLOUD_PROJECT"),
-            location=config("GOOGLE_CLOUD_LOCATION", default="us-central1"),
+        embedding_model = config("EMBEDDING_MODEL", default="models/text-embedding-004")
+        model = GoogleGenerativeAIEmbeddings(
+            model=embedding_model,
+            google_api_key=config("GOOGLE_API_KEY"),
+            task_type="retrieval_query",
         )
         print(f"Gemini Embeddings Model loaded ({embedding_model})")
         return model
