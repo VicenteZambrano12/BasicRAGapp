@@ -4,7 +4,7 @@ import os
 import argparse
 import numpy as np
 from langchain_core.messages import HumanMessage, AIMessage
-from langchain_google_genai import GoogleGenerativeAIEmbeddings
+from langchain_google_vertexai import VertexAIEmbeddings
 
 from src.config.config_loader import config
 from src.utils.create_system import create_system
@@ -13,12 +13,13 @@ def load_embeddings_model():
     """Initialize the query embeddings model for debug visualization."""
     print("Loading Gemini Embeddings Model...")
     try:
-        model = GoogleGenerativeAIEmbeddings(
-            model="models/text-embedding-004",
-            google_api_key=config("GOOGLE_API_KEY"),
-            task_type="retrieval_query",
+        embedding_model = config("EMBEDDING_MODEL", default="text-embedding-004")
+        model = VertexAIEmbeddings(
+            model_name=embedding_model,
+            project=config("GOOGLE_CLOUD_PROJECT"),
+            location=config("GOOGLE_CLOUD_LOCATION", default="us-central1"),
         )
-        print("Gemini Embeddings Model loaded (models/text-embedding-004)")
+        print(f"Gemini Embeddings Model loaded ({embedding_model})")
         return model
     except Exception as exc:
         print(f"Error loading embeddings model: {exc}")
@@ -49,9 +50,6 @@ def inspect_query_embedding(query_text, embeddings_model):
 
 def run_terminal_chat(subject: str, community: str) -> None:
     """Run an interactive terminal loop against the compiled graph."""
-    os.environ["AZURE_OPENAI_API_KEY"] = config("AZURE_OPENAI_API_KEY")
-    os.environ["GOOGLE_API_KEY"] = config("GOOGLE_API_KEY")
-
     embeddings_model = load_embeddings_model()
 
     print("Initializing RAG system...")

@@ -2,14 +2,10 @@ import os
 import re
 import sys
 from langchain_text_splitters import RecursiveCharacterTextSplitter
-# Changed: Import Google GenAI Embeddings
-from langchain_google_genai import GoogleGenerativeAIEmbeddings
+from langchain_google_vertexai import VertexAIEmbeddings
 from langchain_community.document_loaders import PyPDFLoader
 from utils.vector_db_manager import get_vector_store
 from config.config_loader import config
-
-os.environ["GOOGLE_API_KEY"] = config("GOOGLE_API_KEY")
-
 
 def extract_folder_and_subject(path: str):
     """Extract folder name and subject from file path."""
@@ -31,22 +27,19 @@ def create_vector_db(path, use_ultra_compact=False):
     """
     folder, subject = extract_folder_and_subject(path)
     
-    # --- CHANGED: Gemini Embeddings Setup ---
     print("Loading Gemini embeddings model...")
     
 
     try:
-        # We use text-embedding-004 as it is the latest stable model
-        embeddings = GoogleGenerativeAIEmbeddings(
-            model="models/text-embedding-004",
-            task_type="retrieval_document" # Optimize for storing documents
+        embeddings = VertexAIEmbeddings(
+            model_name=config("EMBEDDING_MODEL", default="text-embedding-004"),
+            project=config("GOOGLE_CLOUD_PROJECT"),
+            location=config("GOOGLE_CLOUD_LOCATION", default="us-central1"),
         )
         print("✓ Gemini Embeddings model loaded (text-embedding-004)")
     except Exception as e:
         print(f"❌ Failed to initialize Gemini embeddings: {e}")
         raise e
-    # ----------------------------------------
-
     # Get vector store (will use configuration from environment)
     print(f"Connecting to vector database for collection: {subject}")
     vector_store = get_vector_store(

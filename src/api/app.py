@@ -69,8 +69,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-os.environ["AZURE_OPENAI_API_KEY"] = config("AZURE_OPENAI_API_KEY")
-
 app.include_router(home_router)
 app.include_router(create_system_router)
 app.include_router(chat_router)

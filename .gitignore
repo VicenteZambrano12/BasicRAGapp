@@ -1,6 +1,7 @@
-venv
+venv/
+.venv/
+__pycache__/
+*.py[cod]
 .env
-src/__pycache__
-src/config/__pycache__
-src/utils/__pycache__
 src/docs
+config
