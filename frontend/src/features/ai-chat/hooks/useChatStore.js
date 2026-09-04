@@ -1,48 +1,72 @@
-﻿import { useState } from 'react';
+﻿import { useEffect, useRef, useState } from 'react';
+import { createSystem, fileToDataUrl, sendChatMessage } from '../../../lib/api';
 
 export const useChatStore = () => {
+  const sessionId = useRef(crypto.randomUUID()).current;
   const [config, setConfig] = useState({
     region: 'Madrid',
     subject: 'Historia de España',
     language: 'ES',
   });
+  const [messages, setMessages] = useState([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState('');
 
-  const [messages, setMessages] = useState([
-    {
-      id: '1',
-      role: 'assistant',
-      content: '¡Hola! He cargado el temario de Historia de España para Madrid. ¿En qué puedo ayudarte hoy?'
-    },
-    {
-      id: '2',
-      role: 'user',
-      content: 'Resume la crisis de la Restauración (1902-1923).'
-    },
-    {
-      id: '3',
-      role: 'assistant',
-      content: 'Resumen: Crisis de la Restauración (1902-1923)\n\n• El periodo se caracterizó por la inestabilidad política, el caciquismo, la fragmentación de los partidos dinásticos y el auge de la oposición...'
-    }
-  ]);
+  useEffect(() => {
+    let cancelled = false;
+
+    const initialize = async () => {
+      setError('');
+      try {
+        const result = await createSystem({ session_id: sessionId, category: config.region, subject: config.subject, language: config.language });
+        if (!cancelled && result.response) {
+          setMessages([{ id: crypto.randomUUID(), role: 'assistant', content: result.response }]);
+        }
+      } catch (initializationError) {
+        if (!cancelled) setError(initializationError.message);
+      }
+    };
+
+    initialize();
+    return () => { cancelled = true; };
+  }, [config.region, config.subject, config.language, sessionId]);
 
   const updateConfig = (key, value) => {
     setConfig((prev) => ({ ...prev, [key]: value }));
   };
 
-  const sendMessage = (content, imageFile = null) => {
+  const sendMessage = async (content, imageFile = null) => {
     if (!content.trim() && !imageFile) return;
 
     const newMessage = {
-      id: Date.now().toString(),
+      id: crypto.randomUUID(),
       role: 'user',
       content,
       image: imageFile ? URL.createObjectURL(imageFile) : null
     };
 
     setMessages((prev) => [...prev, newMessage]);
-    
-    // Connect your backend API call here
+    setIsLoading(true);
+    setError('');
+
+    try {
+      const image = imageFile ? await fileToDataUrl(imageFile) : null;
+      const result = await sendChatMessage({
+        session_id: sessionId,
+        query: content,
+        image,
+        image_type: image ? 'base64' : 'url',
+        category: config.region,
+        subject: config.subject,
+        language: config.language,
+      });
+      setMessages((prev) => [...prev, { id: crypto.randomUUID(), role: 'assistant', content: result.response || '' }]);
+    } catch (requestError) {
+      setError(requestError.message);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  return { config, updateConfig, messages, sendMessage };
+  return { config, updateConfig, messages, sendMessage, isLoading, error };
 };
