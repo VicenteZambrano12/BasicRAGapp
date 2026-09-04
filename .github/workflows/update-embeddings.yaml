@@ -30,6 +30,6 @@ jobs:
         env:
           QDRANT_HOST: ${{ secrets.QDRANT_HOST }}
           QDRANT_API_KEY: ${{ secrets.QDRANT_API_KEY }}
-          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          GOOGLE_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           CONTENT_DIRECTORY: './extracted_content'
         run: python ingest.py

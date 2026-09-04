@@ -2,7 +2,7 @@ import os
 import re
 import sys
 from langchain_text_splitters import RecursiveCharacterTextSplitter
-from langchain_google_vertexai import VertexAIEmbeddings
+from langchain_google_genai import GoogleGenerativeAIEmbeddings
 from langchain_community.document_loaders import PyPDFLoader
 from src.config.config_loader import config
 from vector_db.manager import get_vector_store
@@ -37,10 +37,9 @@ def create_vector_db(path, use_ultra_compact=False):
     
 
     try:
-        embeddings = VertexAIEmbeddings(
-            model_name=config("EMBEDDING_MODEL", default="text-embedding-004"),
-            project=config("GOOGLE_CLOUD_PROJECT"),
-            location=config("GOOGLE_CLOUD_LOCATION", default="us-central1"),
+        embeddings = GoogleGenerativeAIEmbeddings(
+            model=config("EMBEDDING_MODEL", default="text-embedding-004"),
+            google_api_key=config("GOOGLE_API_KEY"),
         )
         print("✓ Gemini Embeddings model loaded (text-embedding-004)")
     except Exception as e:
