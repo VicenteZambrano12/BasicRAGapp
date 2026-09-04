@@ -9,6 +9,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from qdrant_client import QdrantClient
 
 from src.api.Endpoint.chat_endpoint import router as chat_router
+from src.api.Endpoint.config_endpoint import router as config_router
 from src.api.Endpoint.create_system_endpoint import router as create_system_router
 from src.api.Endpoint.home_endpoint import router as home_router
 from src.config.config_loader import config
@@ -70,5 +71,6 @@ app.add_middleware(
 )
 
 app.include_router(home_router)
+app.include_router(config_router)
 app.include_router(create_system_router)
 app.include_router(chat_router)
