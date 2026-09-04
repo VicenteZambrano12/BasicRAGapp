@@ -21,6 +21,20 @@ class Config:
             # Cloud Run / production: use os.environ
             self._config = None  # fallback to environment variables
 
+        for key in (
+            "GOOGLE_CLOUD_PROJECT",
+            "GOOGLE_CLOUD_LOCATION",
+            "GOOGLE_APPLICATION_CREDENTIALS",
+        ):
+            value = self._config(key, default=None) if self._config else os.environ.get(key)
+            if value:
+                if key == "GOOGLE_APPLICATION_CREDENTIALS":
+                    credential_path = Path(value.replace("\\", os.sep))
+                    if not credential_path.is_absolute():
+                        credential_path = env_path.parent / credential_path
+                    value = str(credential_path)
+                os.environ.setdefault(key, str(value))
+
     def __call__(self, key: str, default=None):
         # Try Decouple first
         if self._config:

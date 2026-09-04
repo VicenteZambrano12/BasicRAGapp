@@ -10,6 +10,12 @@ services:
       - REDIS_HOST=redis
       - REDIS_PORT=6379
       - PORT=8000
+      # Vertex AI / Gemini configuration
+      - GOOGLE_CLOUD_PROJECT=${GOOGLE_CLOUD_PROJECT}
+      - GOOGLE_CLOUD_LOCATION=${GOOGLE_CLOUD_LOCATION:-us-central1}
+      - LLM_MODEL=${LLM_MODEL:-gemini-2.5-flash-lite}
+      - EMBEDDING_MODEL=${EMBEDDING_MODEL:-text-embedding-004}
+      - GOOGLE_APPLICATION_CREDENTIALS=/app/config/basicrahgapp-d65b3bda1f4a.json
       # Vector DB Configuration
       - VECTOR_DB_TYPE=${VECTOR_DB_TYPE:-qdrant}
       # Qdrant configuration (local by default)
@@ -30,7 +36,7 @@ services:
     depends_on:
       - redis
       - qdrant
-    command: ["./src/entrypoint.sh"]
+    command: ["./entrypoint.sh"]
     volumes:
       - .:/app
       # Only mount if using GCP
