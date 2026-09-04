@@ -4,8 +4,14 @@ import sys
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_google_vertexai import VertexAIEmbeddings
 from langchain_community.document_loaders import PyPDFLoader
-from utils.vector_db_manager import get_vector_store
-from config.config_loader import config
+from src.config.config_loader import config
+from vector_db.manager import get_vector_store
+
+
+def clean_text(text: str) -> str:
+    """Normalize whitespace while preserving paragraph boundaries."""
+    paragraphs = (" ".join(line.split()) for line in text.splitlines())
+    return "\n\n".join(paragraph for paragraph in paragraphs if paragraph)
 
 def extract_folder_and_subject(path: str):
     """Extract folder name and subject from file path."""
