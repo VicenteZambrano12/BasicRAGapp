@@ -2,7 +2,9 @@
 
 from typing import Dict
 
+from src.i18n import translate
 
-def build_create_system_response(subject: str) -> Dict[str, str]:
+
+def build_create_system_response(subject: str, language: str = "ES") -> Dict[str, str]:
     """Return the user-facing greeting after system initialization."""
-    return {"response": f"¡Hola! ¿Cómo puedo ayudarte a estudiar tu examen de {subject}?"}
+    return {"response": translate("welcome", language, subject=subject)}

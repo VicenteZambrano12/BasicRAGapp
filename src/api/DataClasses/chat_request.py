@@ -1,6 +1,6 @@
 """Request model for chat interactions with optional multimodal input."""
 
-from typing import Optional
+from typing import Literal, Optional
 from pydantic import BaseModel, Field
 
 
@@ -21,3 +21,6 @@ class ChatRequest(BaseModel):
     )
     category: str = Field("Community", description="Category for the system/database.")
     subject: str = Field("General", description="Subject within the category.")
+    language: Literal["ES", "EN"] = Field(
+        "ES", description="Language for the assistant response."
+    )

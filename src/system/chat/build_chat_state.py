@@ -8,9 +8,14 @@ def build_chat_state(
     intermediate_memory: str,
     memory_summary: str,
     recent_turns: List[Dict[str, str]],
+    language_instruction: str = "Responde siempre en español.",
 ) -> Dict[str, Any]:
     """Construct graph state including visual context, summary, and recent turns."""
     chat_state = {"messages": []}
+
+    chat_state["messages"].append(
+        {"role": "system", "content": language_instruction}
+    )
 
     if intermediate_memory:
         chat_state["messages"].append(

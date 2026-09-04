@@ -6,6 +6,7 @@ from typing import Dict, Optional
 from fastapi import HTTPException
 
 from src.api.DataClasses.chat_request import ChatRequest
+from src.i18n import get_language_instruction
 from src.system.chat.build_chat_state import build_chat_state
 from src.system.chat.build_image_url import build_image_url
 from src.system.chat.build_memory_user_content import build_memory_user_content
@@ -77,6 +78,7 @@ def execute_chat(data: ChatRequest) -> Dict[str, Optional[str]]:
         intermediate_memory=intermediate_memory,
         memory_summary=memory_summary,
         recent_turns=recent_turns,
+        language_instruction=get_language_instruction(data.language),
     )
 
     initial_counts = token_counter.count_messages(chat_state["messages"])

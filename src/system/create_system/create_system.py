@@ -37,4 +37,4 @@ def execute_create_system(data: CreateSystemRequest) -> Dict[str, str]:
     else:
         ensure_cached_graph(cache_key, category, subject)
 
-    return build_create_system_response(subject)
+    return build_create_system_response(subject, data.language)
