@@ -73,7 +73,7 @@ def create_vector_db(path: str, use_ultra_compact=False):
             
         # 1. Asymmetric Subspace Alignment handled inside ModernGeminiEmbeddings
         embeddings = ModernGeminiEmbeddings(
-            model="text-embedding-004",
+            model="text-embedding-001",
             api_key=google_api_key
         )
         print(f"✓ Gemini Embeddings model loaded (text-embedding-001)")
