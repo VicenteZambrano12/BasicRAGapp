@@ -2,11 +2,40 @@ import os
 import glob
 from pathlib import Path
 from langchain_text_splitters import RecursiveCharacterTextSplitter
-from langchain_google_genai import GoogleGenerativeAIEmbeddings
 from langchain_community.document_loaders import PyPDFLoader
+from langchain_core.embeddings import Embeddings
+from google import genai
 
+# Assuming these are available in your repository structure
 from src.config.config_loader import config
 from vector_db.manager import get_vector_store
+
+class ModernGeminiEmbeddings(Embeddings):
+    """
+    A custom LangChain Embeddings wrapper that uses the modern 
+    google-genai SDK to avoid v1beta 404 errors and deprecation warnings.
+    """
+    def __init__(self, api_key: str, model: str = "text-embedding-004"):
+        self.client = genai.Client(api_key=api_key)
+        self.model = model
+
+    def embed_documents(self, texts: list[str]) -> list[list[float]]:
+        # Optimizes representations specifically for document candidate retrieval
+        response = self.client.models.embed_content(
+            model=self.model,
+            contents=texts,
+            config={"task_type": "RETRIEVAL_DOCUMENT"}
+        )
+        return [e.values for e in response.embeddings]
+
+    def embed_query(self, text: str) -> list[float]:
+        # Optimizes representations to identify matching document spaces
+        response = self.client.models.embed_content(
+            model=self.model,
+            contents=text,
+            config={"task_type": "RETRIEVAL_QUERY"}
+        )
+        return response.embeddings[0].values
 
 def clean_text(text: str) -> str:
     """Normalize whitespace while preserving paragraph boundaries."""
@@ -34,11 +63,6 @@ def create_vector_db(path: str, use_ultra_compact=False):
     
     print(f"\nLoading Gemini embeddings model for {subject}...")
     try:
-        # Defaulting to text-embedding-004 as recommended
-        embedding_model = config("EMBEDDING_MODEL", default="models/text-embedding-004")
-        if not embedding_model.startswith("models/"):
-            embedding_model = f"models/{embedding_model}"
-            
         google_api_key = config(
             "GOOGLE_API_KEY",
             default=os.getenv("GOOGLE_API_KEY") or os.getenv("GCP_API_KEY") or os.getenv("GEMINI_API_KEY"),
@@ -47,13 +71,12 @@ def create_vector_db(path: str, use_ultra_compact=False):
         if not google_api_key:
             raise RuntimeError("Gemini API key is not configured.")
             
-        # 1. Asymmetric Subspace Alignment: Use RETRIEVAL_DOCUMENT
-        embeddings = GoogleGenerativeAIEmbeddings(
-            model=embedding_model,
-            google_api_key=google_api_key,
-            task_type="RETRIEVAL_DOCUMENT" 
+        # 1. Asymmetric Subspace Alignment handled inside ModernGeminiEmbeddings
+        embeddings = ModernGeminiEmbeddings(
+            model="text-embedding-004",
+            api_key=google_api_key
         )
-        print(f"✓ Gemini Embeddings model loaded ({embedding_model})")
+        print(f"✓ Gemini Embeddings model loaded (text-embedding-004)")
     except Exception as e:
         print(f"❌ Failed to initialize Gemini embeddings: {e}")
         raise e
