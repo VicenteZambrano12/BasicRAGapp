@@ -15,7 +15,7 @@ class ModernGeminiEmbeddings(Embeddings):
     A custom LangChain Embeddings wrapper that uses the modern 
     google-genai SDK to avoid v1beta 404 errors and deprecation warnings.
     """
-    def __init__(self, api_key: str, model: str = "text-embedding-004"):
+    def __init__(self, api_key: str, model: str = "text-embedding-001"):
         self.client = genai.Client(api_key=api_key)
         self.model = model
 
