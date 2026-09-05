@@ -76,7 +76,7 @@ def create_vector_db(path: str, use_ultra_compact=False):
             model="text-embedding-004",
             api_key=google_api_key
         )
-        print(f"✓ Gemini Embeddings model loaded (text-embedding-004)")
+        print(f"✓ Gemini Embeddings model loaded (text-embedding-001)")
     except Exception as e:
         print(f"❌ Failed to initialize Gemini embeddings: {e}")
         raise e
