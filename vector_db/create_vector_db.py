@@ -37,7 +37,7 @@ def create_vector_db(path, use_ultra_compact=False):
     
 
     try:
-        embedding_model = config("EMBEDDING_MODEL", default="text-embedding-004")
+        embedding_model = config("EMBEDDING_MODEL", default="gemini-embedding-001")
         if not embedding_model.startswith("models/"):
             embedding_model = f"models/{embedding_model}"
         google_api_key = config(
