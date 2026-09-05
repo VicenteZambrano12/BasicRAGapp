@@ -21,6 +21,17 @@ jobs:
         with:
           python-version: '3.11'
 
+      - name: Authenticate Google Cloud Service Account
+        env:
+          GCP_SA_KEY: ${{ secrets.GCP_SA_KEY }}
+        run: |
+          mkdir -p config
+          echo "$GCP_SA_KEY" > config/basicrahgapp-d65b3bda1f4a.json
+          echo "GOOGLE_APPLICATION_CREDENTIALS=config/basicrahgapp-d65b3bda1f4a.json" >> $GITHUB_ENV
+          echo "GOOGLE_GENAI_USE_ENTERPRISE=true" >> $GITHUB_ENV
+          echo "GOOGLE_CLOUD_PROJECT=basicrahgapp" >> $GITHUB_ENV
+          echo "GOOGLE_CLOUD_LOCATION=us-central1" >> $GITHUB_ENV
+
       - name: Install Dependencies
         run: |
           python -m pip install --upgrade pip
@@ -31,13 +42,8 @@ jobs:
           QDRANT_HOST: ${{ secrets.QDRANT_HOST }}
           QDRANT_URL: ${{ secrets.QDRANT_URL }}
           QDRANT_API_KEY: ${{ secrets.QDRANT_API_KEY }}
-          GOOGLE_API_KEY: ${{ secrets.GEMINI_API_KEY || secrets.GOOGLE_API_KEY || secrets.GCP_API_KEY }}
           CONTENT_DIRECTORY: './extracted_content'
         run: |
-          if [ -z "$GOOGLE_API_KEY" ]; then
-            echo "::error::Configure GEMINI_API_KEY, GOOGLE_API_KEY, or GCP_API_KEY in GitHub repository secrets."
-            exit 1
-          fi
           if [ -z "$QDRANT_URL" ] && [ -n "$QDRANT_HOST" ]; then
             case "$QDRANT_HOST" in
               http://*|https://*) QDRANT_URL="$QDRANT_HOST" ;;
