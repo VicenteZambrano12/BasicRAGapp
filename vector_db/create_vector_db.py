@@ -37,9 +37,18 @@ def create_vector_db(path, use_ultra_compact=False):
     
 
     try:
+        google_api_key = config(
+            "GOOGLE_API_KEY",
+            default=os.getenv("GOOGLE_API_KEY") or os.getenv("GCP_API_KEY"),
+        )
+        if not google_api_key:
+            raise RuntimeError(
+                "Gemini API key is not configured. Set GOOGLE_API_KEY "
+                "(or GCP_API_KEY locally)."
+            )
         embeddings = GoogleGenerativeAIEmbeddings(
             model=config("EMBEDDING_MODEL", default="text-embedding-004"),
-            google_api_key=config("GOOGLE_API_KEY"),
+            google_api_key=google_api_key,
         )
         print("✓ Gemini Embeddings model loaded (text-embedding-004)")
     except Exception as e:

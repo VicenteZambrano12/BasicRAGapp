@@ -41,9 +41,10 @@ class Config:
             try:
                 return self._config(key)
             except Exception:
-                if default is not None:
-                    return default
-                raise RuntimeError(f"Environment variable '{key}' not set in .env")
+                value = os.environ.get(key, default)
+                if value is not None:
+                    return value
+                raise RuntimeError(f"Environment variable '{key}' not set in .env or environment")
         # Fallback to os.environ
         value = os.environ.get(key, default)
         if value is None:
