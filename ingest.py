@@ -12,15 +12,30 @@ from vector_db.manager import get_vector_store
 
 class ModernGeminiEmbeddings(Embeddings):
     """
-    A custom LangChain Embeddings wrapper that uses the modern 
-    google-genai SDK to avoid v1beta 404 errors and deprecation warnings.
+    A custom LangChain Embeddings wrapper that automatically detects 
+    and bridges Vertex AI Enterprise and Google AI Studio environments.
     """
-    def __init__(self, api_key: str, model: str = "text-embedding-004"):
-        self.client = genai.Client(api_key=api_key)
+    def __init__(self, api_key: str = None, model: str = "text-embedding-004"):
         self.model = model
+        
+        # Automatically detect if Vertex AI Enterprise credentials are active
+        use_vertex = (
+            os.getenv("GOOGLE_GENAI_USE_ENTERPRISE", "false").lower() == "true" 
+            or bool(os.getenv("GOOGLE_APPLICATION_CREDENTIALS"))
+        )
+        
+        if use_vertex:
+            # Initialize using Vertex AI Enterprise settings (matching test_api.py)
+            self.client = genai.Client(
+                vertexai=True,
+                project=os.getenv("GOOGLE_CLOUD_PROJECT", "basicrahgapp"),
+                location=os.getenv("GOOGLE_CLOUD_LOCATION", "us-central1")
+            )
+        else:
+            # Fallback to standard AI Studio API key
+            self.client = genai.Client(api_key=api_key)
 
     def embed_documents(self, texts: list[str]) -> list[list[float]]:
-        # Optimizes representations specifically for document candidate retrieval
         response = self.client.models.embed_content(
             model=self.model,
             contents=texts,
@@ -29,7 +44,6 @@ class ModernGeminiEmbeddings(Embeddings):
         return [e.values for e in response.embeddings]
 
     def embed_query(self, text: str) -> list[float]:
-        # Optimizes representations to identify matching document spaces
         response = self.client.models.embed_content(
             model=self.model,
             contents=text,
