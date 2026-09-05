@@ -25,17 +25,16 @@ class ModernGeminiEmbeddings(Embeddings):
         )
         
         if use_vertex:
-            # Initialize using Vertex AI Enterprise settings (matching test_api.py)
             self.client = genai.Client(
                 vertexai=True,
                 project=os.getenv("GOOGLE_CLOUD_PROJECT", "basicrahgapp"),
                 location=os.getenv("GOOGLE_CLOUD_LOCATION", "us-central1")
             )
         else:
-            # Fallback to standard AI Studio API key
             self.client = genai.Client(api_key=api_key)
 
     def embed_documents(self, texts: list[str]) -> list[list[float]]:
+        # Optimizes representations specifically for document candidate retrieval
         response = self.client.models.embed_content(
             model=self.model,
             contents=texts,
@@ -44,6 +43,7 @@ class ModernGeminiEmbeddings(Embeddings):
         return [e.values for e in response.embeddings]
 
     def embed_query(self, text: str) -> list[float]:
+        # Optimizes representations to identify matching document spaces
         response = self.client.models.embed_content(
             model=self.model,
             contents=text,
@@ -81,9 +81,11 @@ def create_vector_db(path: str, use_ultra_compact=False):
             "GOOGLE_API_KEY",
             default=os.getenv("GOOGLE_API_KEY") or os.getenv("GCP_API_KEY") or os.getenv("GEMINI_API_KEY"),
         )
+        credentials_path = os.getenv("GOOGLE_APPLICATION_CREDENTIALS")
         
-        if not google_api_key:
-            raise RuntimeError("Gemini API key is not configured.")
+        # Do not crash if API key is missing as long as Service Account JSON is provided
+        if not google_api_key and not credentials_path:
+            raise RuntimeError("Neither Gemini API key nor Google Application Credentials are configured.")
             
         # 1. Asymmetric Subspace Alignment handled inside ModernGeminiEmbeddings
         embeddings = ModernGeminiEmbeddings(
@@ -96,7 +98,6 @@ def create_vector_db(path: str, use_ultra_compact=False):
         raise e
 
     print(f"Connecting to vector database for collection: {subject}")
-    # Note: Ensure get_vector_store configures Qdrant with Distance.DOT and Scalar Quantization
     vector_store = get_vector_store(
         collection_name=subject,
         embeddings=embeddings
@@ -109,12 +110,10 @@ def create_vector_db(path: str, use_ultra_compact=False):
     
     # 2. Context-Preserving Chunking: Adjusted to token-equivalent char sizes
     if use_ultra_compact:
-        # ~256 tokens / 10% overlap for Factoid/Q&A
         chunk_size = 1000
         chunk_overlap = 100
         print("Using compact chunking (~256 tokens)")
     else:
-        # ~512 tokens / 15% overlap for Technical/Legal
         chunk_size = 2000
         chunk_overlap = 300
         print("Using standard chunking (~512 tokens)")
@@ -135,7 +134,6 @@ def create_vector_db(path: str, use_ultra_compact=False):
         
         if cleaned_content and len(cleaned_content.strip()) > 0:
             # 3. Metadata Enrichment and Context Injection
-            # Prepend the structural breadcrumb (Document Title) to the text
             doc.page_content = f"{subject.replace('-', ' ').title()}\n\n{cleaned_content}"
             
             if use_ultra_compact:
@@ -155,7 +153,6 @@ def create_vector_db(path: str, use_ultra_compact=False):
         try:
             vector_store.add_documents(documents=batch)
         except Exception as e:
-            # Fallback to single insertion on batch failure
             for j, doc in enumerate(batch):
                 try:
                     vector_store.add_documents(documents=[doc])
