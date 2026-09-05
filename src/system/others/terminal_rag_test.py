@@ -13,7 +13,7 @@ def load_embeddings_model():
     """Initialize the query embeddings model for debug visualization."""
     print("Loading Gemini Embeddings Model...")
     try:
-        embedding_model = config("EMBEDDING_MODEL", default="text-embedding-001")
+        embedding_model = config("EMBEDDING_MODEL", default="text-embedding-004")
         model = GoogleGenerativeAIEmbeddings(
             model=embedding_model,
             google_api_key=config("GOOGLE_API_KEY"),
@@ -37,7 +37,7 @@ def inspect_query_embedding(query_text, embeddings_model):
     dim = query_vector_np.shape[0]
     
     print(f"   ┌─────────────────────────────────────────────────────────────┐")
-    print(f"   │ Model: text-embedding-001                         │")
+    print(f"   │ Model: text-embedding-004                         │")
     print(f"   │ Dimension: {dim:<45}│")
     print(f"   ├─────────────────────────────────────────────────────────────┤")
     # Mostramos solo un preview numérico para no saturar la consola

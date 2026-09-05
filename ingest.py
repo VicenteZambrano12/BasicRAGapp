@@ -15,7 +15,7 @@ class ModernGeminiEmbeddings(Embeddings):
     A custom LangChain Embeddings wrapper that uses the modern 
     google-genai SDK to avoid v1beta 404 errors and deprecation warnings.
     """
-    def __init__(self, api_key: str, model: str = "text-embedding-001"):
+    def __init__(self, api_key: str, model: str = "text-embedding-004"):
         self.client = genai.Client(api_key=api_key)
         self.model = model
 
@@ -73,10 +73,10 @@ def create_vector_db(path: str, use_ultra_compact=False):
             
         # 1. Asymmetric Subspace Alignment handled inside ModernGeminiEmbeddings
         embeddings = ModernGeminiEmbeddings(
-            model="text-embedding-001",
+            model="text-embedding-004",
             api_key=google_api_key
         )
-        print(f"✓ Gemini Embeddings model loaded (text-embedding-001)")
+        print(f"✓ Gemini Embeddings model loaded (text-embedding-004)")
     except Exception as e:
         print(f"❌ Failed to initialize Gemini embeddings: {e}")
         raise e
