@@ -38,4 +38,11 @@ jobs:
             echo "::error::Configure GEMINI_API_KEY, GOOGLE_API_KEY, or GCP_API_KEY in GitHub repository secrets."
             exit 1
           fi
+          if [ -z "$QDRANT_URL" ] && [ -n "$QDRANT_HOST" ]; then
+            case "$QDRANT_HOST" in
+              http://*|https://*) QDRANT_URL="$QDRANT_HOST" ;;
+              *) QDRANT_URL="https://$QDRANT_HOST" ;;
+            esac
+            export QDRANT_URL
+          fi
           python ingest.py
