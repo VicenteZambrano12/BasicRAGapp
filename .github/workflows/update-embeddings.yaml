@@ -19,7 +19,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.10'
+          python-version: '3.11'
 
       - name: Install Dependencies
         run: |
@@ -30,6 +30,11 @@ jobs:
         env:
           QDRANT_HOST: ${{ secrets.QDRANT_HOST }}
           QDRANT_API_KEY: ${{ secrets.QDRANT_API_KEY }}
-          GOOGLE_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          GOOGLE_API_KEY: ${{ secrets.GEMINI_API_KEY || secrets.GOOGLE_API_KEY || secrets.GCP_API_KEY }}
           CONTENT_DIRECTORY: './extracted_content'
-        run: python ingest.py
+        run: |
+          if [ -z "$GOOGLE_API_KEY" ]; then
+            echo "::error::Configure GEMINI_API_KEY, GOOGLE_API_KEY, or GCP_API_KEY in GitHub repository secrets."
+            exit 1
+          fi
+          python ingest.py
