@@ -37,6 +37,9 @@ def create_vector_db(path, use_ultra_compact=False):
     
 
     try:
+        embedding_model = config("EMBEDDING_MODEL", default="text-embedding-004")
+        if not embedding_model.startswith("models/"):
+            embedding_model = f"models/{embedding_model}"
         google_api_key = config(
             "GOOGLE_API_KEY",
             default=os.getenv("GOOGLE_API_KEY") or os.getenv("GCP_API_KEY"),
@@ -47,10 +50,10 @@ def create_vector_db(path, use_ultra_compact=False):
                 "(or GCP_API_KEY locally)."
             )
         embeddings = GoogleGenerativeAIEmbeddings(
-            model=config("EMBEDDING_MODEL", default="text-embedding-004"),
+            model=embedding_model,
             google_api_key=google_api_key,
         )
-        print("✓ Gemini Embeddings model loaded (text-embedding-004)")
+        print(f"✓ Gemini Embeddings model loaded ({embedding_model})")
     except Exception as e:
         print(f"❌ Failed to initialize Gemini embeddings: {e}")
         raise e

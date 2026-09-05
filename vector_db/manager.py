@@ -20,8 +20,11 @@ class QdrantVectorDB:
         qdrant_port = int(os.getenv("QDRANT_PORT", "6333"))
         qdrant_api_key = os.getenv("QDRANT_API_KEY", "").strip()
         
-        # Create Qdrant client - prefer host:port over URL
-        # Only use URL if it's explicitly set AND not empty
+        # Accept a full endpoint in either QDRANT_URL or QDRANT_HOST.
+        if qdrant_host.startswith(("http://", "https://")) and not qdrant_url:
+            qdrant_url = qdrant_host
+
+        # Create Qdrant client - prefer an explicit URL over host:port.
         if qdrant_url:
             print(f"🌐 Connecting to Qdrant at: {qdrant_url}")
             self.client = QdrantClient(
@@ -29,7 +32,6 @@ class QdrantVectorDB:
                 api_key=qdrant_api_key if qdrant_api_key else None,
             )
         else:
-            # Use host:port (for local instances) - this is the default
             print(f"🏠 Connecting to Qdrant at: {qdrant_host}:{qdrant_port}")
             self.client = QdrantClient(
                 host=qdrant_host,
