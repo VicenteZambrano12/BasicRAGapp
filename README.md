@@ -26,10 +26,60 @@ Key endpoints include `GET /` for health and cache diagnostics, `GET /config` fo
 ## Requirements
 
 - Python 3.12 or later
+- uv
 - Node.js and npm
-- Docker and Docker Compose for the containerized setup
 - Google Cloud credentials for Vertex AI or Gemini integrations
-- Qdrant and Redis, provided by Docker Compose or equivalent services
+- Qdrant and Redis services
+
+## Local Python Setup with uv
+
+Install `uv` if it is not already available:
+
+Windows PowerShell:
+
+```powershell
+powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"
+```
+
+macOS or Linux:
+
+```bash
+curl -LsSf https://astral.sh/uv/install.sh | sh
+```
+
+From the repository root, remove an existing virtual environment, create a new one, and install the backend dependencies:
+
+Windows PowerShell:
+
+```powershell
+Remove-Item -Recurse -Force venv, .venv, env -ErrorAction SilentlyContinue
+uv venv
+uv pip install --python .venv\Scripts\python.exe -r src\requirements.txt
+```
+
+macOS or Linux:
+
+```bash
+rm -rf venv .venv env
+uv venv
+uv pip install --python .venv/bin/python -r src/requirements.txt
+```
+
+To record the installed, resolved versions back into the dependency file:
+
+Windows PowerShell:
+
+```powershell
+uv pip freeze --python .venv\Scripts\python.exe | Set-Content src\requirements.txt
+```
+
+macOS or Linux:
+
+```bash
+uv pip freeze --python .venv/bin/python > src/requirements.txt
+```
+
+The commands below use `uv run`, so manually activating the virtual environment is optional.
 
 ## Configuration
 
@@ -45,13 +95,15 @@ Copy `.env.sample` to `.env` and configure the required values, including:
 
 Keep service-account credentials outside version control.
 
-## Run With Docker Compose
+## Run the Backend Locally
+
+Start the API with:
 
 ```bash
-docker compose up --build
+uv run uvicorn src.app:app --reload --host 0.0.0.0 --port 8000
 ```
 
-The backend is available at `http://localhost:8000`. Qdrant is exposed on ports `6333` and `6334`, and Redis is exposed on port `6379`.
+The backend is available at `http://localhost:8000`. Ensure that Qdrant and Redis are running through your preferred local or hosted service.
 
 ## Run the Frontend Locally
 
@@ -75,7 +127,7 @@ npm run build
 The ingestion script processes the source material used by the retrieval system:
 
 ```bash
-python ingest.py
+uv run python ingest.py
 ```
 
 ## Testing
@@ -83,7 +135,7 @@ python ingest.py
 Backend API tests can be run with:
 
 ```bash
-pytest
+uv run --with pytest pytest
 ```
 
 The frontend production build can be validated with:
