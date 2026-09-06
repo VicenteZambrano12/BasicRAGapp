@@ -22,7 +22,4 @@ resource "google_compute_subnetwork" "this" {
   region        = each.value.region
   network       = data.google_compute_network.this.self_link
   ip_cidr_range = each.value.ip_cidr_range
-  labels = merge(var.labels, {
-    name = "${lookup(var.labels, "project", var.project_id)}_${each.value.name}"
-  })
 }

@@ -1,11 +1,17 @@
+import hashlib
+import mimetypes
 import os
-import glob
+from datetime import datetime, timezone
 from pathlib import Path
+
 from dotenv import load_dotenv
+from google import genai
+from google.cloud import storage
+from google.cloud.exceptions import NotFound
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_community.document_loaders import PyPDFLoader
 from langchain_core.embeddings import Embeddings
-from google import genai
+from tenacity import retry, stop_after_attempt, wait_exponential
 
 load_dotenv()
 
@@ -61,13 +67,74 @@ def extract_folder_and_subject(path: str):
         subject = filename
     return folder_name, subject
 
-def create_vector_db(path: str, use_ultra_compact=False):
+
+def compute_sha256(path: str) -> str:
+    """Compute the SHA-256 checksum of a local file, streaming to bound memory use."""
+    digest = hashlib.sha256()
+    with open(path, "rb") as f:
+        for chunk in iter(lambda: f.read(1024 * 1024), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
+
+
+@retry(stop=stop_after_attempt(3), wait=wait_exponential(multiplier=1, min=1, max=10))
+def _upload_blob(blob, local_path: str, file_hash: str, generation) -> None:
+    # if_generation_match makes the upload idempotent under concurrent runs:
+    # 0 requires the object to not exist yet, otherwise it must match the current generation.
+    blob.metadata = {
+        "source_sha256": file_hash,
+        "ingested_at": datetime.now(timezone.utc).isoformat(),
+    }
+    blob.upload_from_filename(local_path, if_generation_match=generation)
+
+
+def upload_to_gcs(bucket: "storage.Bucket", local_path: str, object_name: str) -> dict:
     """
-    Create vector database with optimized chunking for context window management.
-    Uses Google Gemini Embeddings with Task Type Conditioning.
+    Upload a local file to GCS unless an identical copy is already stored there.
+    Returns metadata linking the vector payloads back to the GCS object.
+    """
+    file_hash = compute_sha256(local_path)
+    blob = bucket.blob(object_name)
+
+    try:
+        blob.reload()
+        existing_hash = (blob.metadata or {}).get("source_sha256")
+        if existing_hash == file_hash:
+            print(f"↷ Skipping GCS upload (unchanged): {object_name}")
+        else:
+            print(f"⬆ Uploading (changed): {object_name}")
+            _upload_blob(blob, local_path, file_hash, blob.generation)
+            blob.reload()
+    except NotFound:
+        print(f"⬆ Uploading (new): {object_name}")
+        _upload_blob(blob, local_path, file_hash, 0)
+        blob.reload()
+
+    mime_type, _ = mimetypes.guess_type(local_path)
+    return {
+        "gcs_uri": f"gs://{bucket.name}/{object_name}",
+        "bucket_name": bucket.name,
+        "object_name": object_name,
+        "source_sha256": file_hash,
+        "gcs_generation": str(blob.generation),
+        "mime_type": mime_type or "application/octet-stream",
+        "file_size_bytes": blob.size,
+    }
+
+def create_vector_db(path: str, bucket: "storage.Bucket", content_root: str, use_ultra_compact=False):
+    """
+    Upload the source file to GCS, then create/update the vector database with
+    optimized chunking for context window management. Uses Google Gemini
+    Embeddings with Task Type Conditioning. Each chunk's metadata links back
+    to the GCS object it was extracted from.
     """
     folder, subject = extract_folder_and_subject(path)
-    
+
+    relative_path = Path(path).resolve().relative_to(Path(content_root).resolve()).as_posix()
+    print(f"Uploading source file to GCS: {relative_path}")
+    gcs_location = upload_to_gcs(bucket, path, relative_path)
+    print(f"✓ GCS object ready: {gcs_location['gcs_uri']} (generation {gcs_location['gcs_generation']})")
+
     print(f"\nLoading Gemini embeddings model for {subject}...")
     try:
         credentials_path = config("GOOGLE_APPLICATION_CREDENTIALS")
@@ -114,6 +181,7 @@ def create_vector_db(path: str, use_ultra_compact=False):
     all_splits = text_splitter.split_documents(docs)
     
     print("Validating, cleaning, and injecting context into chunks...")
+    ingested_at = datetime.now(timezone.utc).isoformat()
     valid_splits = []
     for doc in all_splits:
         cleaned_content = clean_text(doc.page_content)
@@ -125,8 +193,26 @@ def create_vector_db(path: str, use_ultra_compact=False):
             if use_ultra_compact:
                 doc.metadata['compact'] = True
             doc.metadata['chunk_size'] = chunk_size
+
+            # Link this chunk back to the exact GCS object it was extracted from.
+            doc.metadata.update(gcs_location)
+            doc.metadata['relative_path'] = relative_path
+            doc.metadata['file_name'] = os.path.basename(path)
+            doc.metadata['embedding_model'] = embedding_model
+            doc.metadata['ingested_at'] = ingested_at
+            page_number = doc.metadata.get('page')
+            if page_number is not None:
+                doc.metadata['page_number'] = page_number + 1
+
             valid_splits.append(doc)
-    
+
+    # Chunk position/count depends on the final valid_splits list, so it is
+    # assigned in a second pass once empty chunks have been filtered out.
+    for index, doc in enumerate(valid_splits):
+        doc.metadata['chunk_index'] = index
+        doc.metadata['chunk_count'] = len(valid_splits)
+        doc.metadata['chunk_id'] = f"{relative_path}:{index:06d}"
+
     all_splits = valid_splits
     
     batch_size = 100 
@@ -152,7 +238,7 @@ def create_vector_db(path: str, use_ultra_compact=False):
         
     return subject
 
-def process_directory(content_dir: str):
+def process_directory(content_dir: str, bucket: "storage.Bucket"):
     base_path = Path(content_dir)
     pdf_files = list(base_path.rglob("*.pdf"))
     
@@ -163,11 +249,14 @@ def process_directory(content_dir: str):
     for pdf_path in pdf_files:
         print(f"\n--- Processing: {pdf_path.name} ---")
         try:
-            collection = create_vector_db(str(pdf_path), use_ultra_compact=False)
+            collection = create_vector_db(str(pdf_path), bucket, content_dir, use_ultra_compact=False)
             print(f"✅ SUCCESS! Indexed to collection '{collection}'")
         except Exception as e:
             print(f"\n❌ ERROR processing '{pdf_path.name}': {e}")
 
 if __name__ == "__main__":
     CONTENT_DIRECTORY = os.getenv("CONTENT_DIRECTORY", "./content")
-    process_directory(CONTENT_DIRECTORY)
+    bucket_name = config("GCS_BUCKET_NAME")
+    storage_client = storage.Client(project=os.getenv("GOOGLE_CLOUD_PROJECT"))
+    gcs_bucket = storage_client.bucket(bucket_name)
+    process_directory(CONTENT_DIRECTORY, gcs_bucket)
