@@ -23,4 +23,4 @@ terraform -chdir=infra/environments/prod plan -var-file=terraform.tfvars
 terraform -chdir=infra/environments/prod apply -var-file=terraform.tfvars
 ```
 
-Review the environment-specific documentation in [environments/prod](environments/prod/README.md) and the module documentation under [modules](modules).
+Terraform modules are documented through their variable and output descriptions; this file is the single infrastructure-level guide.

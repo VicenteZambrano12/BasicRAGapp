@@ -17,7 +17,6 @@ module "vpc" {
 
   project_id = var.project_id
   name       = "portfolio-demo-vpc"
-  labels     = local.resource_labels
 
   subnets = [
     {
