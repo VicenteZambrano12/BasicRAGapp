@@ -1,10 +1,13 @@
 import os
 import glob
 from pathlib import Path
+from dotenv import load_dotenv
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_community.document_loaders import PyPDFLoader
 from langchain_core.embeddings import Embeddings
 from google import genai
+
+load_dotenv()
 
 # Assuming these are available in your repository structure
 from src.config.config_loader import config
@@ -15,23 +18,13 @@ class ModernGeminiEmbeddings(Embeddings):
     A custom LangChain Embeddings wrapper that automatically detects 
     and bridges Vertex AI Enterprise and Google AI Studio environments.
     """
-    def __init__(self, api_key: str = None, model: str = "text-embedding-004"):
+    def __init__(self, model: str):
         self.model = model
-        
-        # Automatically detect if Vertex AI Enterprise credentials are active
-        use_vertex = (
-            os.getenv("GOOGLE_GENAI_USE_ENTERPRISE", "false").lower() == "true" 
-            or bool(os.getenv("GOOGLE_APPLICATION_CREDENTIALS"))
+        self.client = genai.Client(
+            vertexai=True,
+            project=os.getenv("GOOGLE_CLOUD_PROJECT"),
+            location=os.getenv("GOOGLE_CLOUD_LOCATION"),
         )
-        
-        if use_vertex:
-            self.client = genai.Client(
-                vertexai=True,
-                project=os.getenv("GOOGLE_CLOUD_PROJECT", "basicrahgapp"),
-                location=os.getenv("GOOGLE_CLOUD_LOCATION", "us-central1")
-            )
-        else:
-            self.client = genai.Client(api_key=api_key)
 
     def embed_documents(self, texts: list[str]) -> list[list[float]]:
         # Optimizes representations specifically for document candidate retrieval
@@ -77,22 +70,15 @@ def create_vector_db(path: str, use_ultra_compact=False):
     
     print(f"\nLoading Gemini embeddings model for {subject}...")
     try:
-        google_api_key = config(
-            "GOOGLE_API_KEY",
-            default=os.getenv("GOOGLE_API_KEY") or os.getenv("GCP_API_KEY") or os.getenv("GEMINI_API_KEY"),
-        )
-        credentials_path = os.getenv("GOOGLE_APPLICATION_CREDENTIALS")
-        
-        # Do not crash if API key is missing as long as Service Account JSON is provided
-        if not google_api_key and not credentials_path:
-            raise RuntimeError("Neither Gemini API key nor Google Application Credentials are configured.")
-            
-        # 1. Asymmetric Subspace Alignment handled inside ModernGeminiEmbeddings
+        credentials_path = config("GOOGLE_APPLICATION_CREDENTIALS")
+        if not os.path.exists(credentials_path):
+            raise RuntimeError(f"Google credentials file was not found: {credentials_path}")
+
+        embedding_model = config("EMBEDDING_MODEL")
         embeddings = ModernGeminiEmbeddings(
-            model="text-embedding-004",
-            api_key=google_api_key
+            model=embedding_model,
         )
-        print(f"✓ Gemini Embeddings model loaded (text-embedding-004)")
+        print(f"✓ Gemini Embeddings model loaded ({embedding_model})")
     except Exception as e:
         print(f"❌ Failed to initialize Gemini embeddings: {e}")
         raise e
