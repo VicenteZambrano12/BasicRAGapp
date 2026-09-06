@@ -39,7 +39,7 @@ module "qdrant_vm_monitoring" {
   member     = "serviceAccount:${module.qdrant_vm_sa.email}"
 }
 
-# Qdrant vector database server: e2-micro / Debian 11, running the qdrant/qdrant
+# Qdrant vector database server: e2-micro / Debian, running the qdrant/qdrant
 # Docker image via startup script, secured with an API key.
 module "qdrant_server" {
   source = "../../modules/compute_instance"
@@ -48,7 +48,7 @@ module "qdrant_server" {
   name         = "qdrant-server"
   zone         = var.qdrant_zone
   machine_type = "e2-micro"
-  image        = "debian-cloud/debian-11"
+  image        = var.qdrant_image
   network      = module.vpc.self_link
   subnetwork   = module.vpc.subnet_self_links["basic-rag-app-subnet"]
   tags         = ["qdrant-server"]
