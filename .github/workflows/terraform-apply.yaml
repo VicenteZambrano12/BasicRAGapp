@@ -1,6 +1,7 @@
 name: Terraform Apply (prod)
 
 on:
+  workflow_dispatch: # allows a manual one-off run, e.g. to verify the pipeline
   pull_request:
     branches:
       - main
