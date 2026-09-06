@@ -10,7 +10,16 @@ from src.system.create_system.create_system import execute_create_system
 router = APIRouter()
 
 
-@router.post("/create_system", response_model=Dict[str, str])
-async def create_system_endpoint(data: CreateSystemRequest):
+@router.post(
+    "/create_system",
+    response_model=Dict[str, str],
+    summary="Create a study system",
+    description=(
+        "Create or retrieve the session-specific graph for the selected "
+        "category, subject, and language."
+    ),
+    response_description="Session system configuration and status.",
+)
+async def create_system_endpoint(data: CreateSystemRequest) -> Dict[str, str]:
     """Create or recover a graph instance and persist its configuration."""
     return execute_create_system(data)

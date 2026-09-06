@@ -11,15 +11,15 @@ class ChatRequest(BaseModel):
     query: str = Field("", description="User's text query.")
     image: Optional[str] = Field(
         None,
-        description=(
-            "Image data. Can be: HTTPS URL, data URL, or raw base64."
-        ),
+        description="Image data as an HTTPS URL, data URL, or raw base64 string.",
     )
     image_type: str = Field(
         "url",
-        description="Type of image data: 'url' for URLs or 'base64' for base64 data",
+        description="Image encoding type: 'url' or 'base64'.",
     )
-    category: str = Field("Community", description="Category for the system/database.")
+    category: str = Field(
+        "Community", description="Category used to select the study system."
+    )
     subject: str = Field("General", description="Subject within the category.")
     language: Literal["ES", "EN"] = Field(
         "ES", description="Language for the assistant response."

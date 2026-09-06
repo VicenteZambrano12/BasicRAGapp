@@ -42,6 +42,7 @@ const createPdf = (lines) => {
   return new Blob([pdf], { type: 'application/pdf' });
 };
 
+/** Creates an object URL for the localized How It Works PDF. */
 export const createHowItWorksPdfUrl = (translations) => {
   const lines = [
     translations.pdfTitle,

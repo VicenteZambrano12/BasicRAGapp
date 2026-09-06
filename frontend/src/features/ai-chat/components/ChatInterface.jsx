@@ -1,5 +1,11 @@
 ﻿import React, { useState, useRef } from 'react';
 
+/**
+ * Renders the conversation history and message composer.
+ *
+ * @param {{ messages: Array<object>, onSendMessage: Function, translations: Record<string, string>, isLoading: boolean, error: string }} props
+ * @returns {React.ReactElement}
+ */
 export const ChatInterface = ({ messages, onSendMessage, translations, isLoading, error }) => {
   const [input, setInput] = useState('');
   const [selectedImage, setSelectedImage] = useState(null);
@@ -27,7 +33,6 @@ export const ChatInterface = ({ messages, onSendMessage, translations, isLoading
         <h2 className="text-lg font-bold tracking-tight text-slate-900">{translations.chatTitle}</h2>
       </div>
       
-      {/* Messages */}
       <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto p-4 sm:p-5" aria-live="polite" aria-label={translations.messagesLabel}>
         {messages.length === 0 && !isLoading && !error && (
           <p className="m-auto max-w-sm text-center text-sm leading-relaxed text-slate-500">{translations.emptyChat}</p>
@@ -50,7 +55,6 @@ export const ChatInterface = ({ messages, onSendMessage, translations, isLoading
         {error && <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-800" role="alert">{error}</div>}
       </div>
 
-      {/* Input container */}
       <form className="flex flex-col gap-3 border-t border-slate-200 p-4 sm:p-5" onSubmit={(event) => { event.preventDefault(); handleSend(); }}>
         {selectedImage && (
           <div className="flex max-w-full items-center gap-2 self-start rounded-md bg-blue-50 px-3 py-1.5 text-xs text-blue-800">
@@ -80,7 +84,6 @@ export const ChatInterface = ({ messages, onSendMessage, translations, isLoading
         </div>
 
         <div className="flex items-center justify-between gap-3 px-1">
-          {/* Hidden file input triggered by image icon button */}
           <input 
             type="file" 
             ref={fileInputRef} 
@@ -95,7 +98,6 @@ export const ChatInterface = ({ messages, onSendMessage, translations, isLoading
             aria-label={translations.attachImage}
             title={translations.attachImage}
           >
-            {/* Image icon matching the mockup */}
             <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
               <circle cx="8.5" cy="8.5" r="1.5"></circle>

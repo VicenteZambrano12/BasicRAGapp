@@ -8,8 +8,14 @@ from src.utils.redis_funcs import REDIS_ENABLED, graph_config_cache, graph_insta
 router = APIRouter()
 
 
-@router.get("/", response_model=Dict[str, Any])
-async def home():
+@router.get(
+    "/",
+    response_model=Dict[str, Any],
+    summary="Check API health",
+    description="Return service status and the current graph cache diagnostics.",
+    response_description="Current service health and cache status.",
+)
+async def home() -> Dict[str, Any]:
     """Return service health and in-memory cache diagnostics."""
 
     return {

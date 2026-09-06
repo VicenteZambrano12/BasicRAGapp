@@ -1,5 +1,11 @@
 ﻿import React from 'react';
 
+/**
+ * Renders controls for the learner's region, subject, and language.
+ *
+ * @param {{ config: object, onConfigChange: Function, translations: Record<string, string> }} props
+ * @returns {React.ReactElement}
+ */
 export const StudyConfig = ({ config, onConfigChange, translations }) => {
   return (
     <section className="flex flex-col gap-5 rounded-xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
@@ -8,7 +14,6 @@ export const StudyConfig = ({ config, onConfigChange, translations }) => {
         <p className="mt-1 text-sm text-slate-600">{translations.studyConfigHint}</p>
       </div>
       
-      {/* Comunidad Autónoma */}
       <div className="flex flex-col gap-2">
         <label htmlFor="region" className="text-sm font-semibold text-slate-700">{translations.regionLabel}</label>
         <select 
@@ -27,7 +32,6 @@ export const StudyConfig = ({ config, onConfigChange, translations }) => {
         </select>
       </div>
 
-      {/* Asignatura */}
       <div className="flex flex-col gap-2">
         <label htmlFor="subject" className="text-sm font-semibold text-slate-700">{translations.subjectLabel}</label>
         <select 
@@ -45,7 +49,6 @@ export const StudyConfig = ({ config, onConfigChange, translations }) => {
         </select>
       </div>
 
-      {/* Language Toggle */}
       <fieldset className="mt-1 flex flex-col gap-2">
         <legend className="text-sm font-semibold text-slate-700">{translations.languageLabel}</legend>
         <div className="flex overflow-hidden rounded-lg border border-slate-300" role="group">

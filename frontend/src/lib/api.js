@@ -11,25 +11,26 @@ async function request(path, options = {}) {
     try {
       const body = await response.json();
       detail = body.detail || detail;
-    } catch {
-      // Keep the HTTP error when the server did not return JSON.
-    }
+    } catch {}
     throw new Error(detail);
   }
 
   return response.json();
 }
 
+/** Creates or updates the backend study context for a chat session. */
 export const createSystem = (payload) => request('/create_system', {
   method: 'POST',
   body: JSON.stringify(payload),
 });
 
+/** Sends a chat message and returns the backend response. */
 export const sendChatMessage = (payload) => request('/chat', {
   method: 'POST',
   body: JSON.stringify(payload),
 });
 
+/** Converts a browser-selected file to a data URL. */
 export const fileToDataUrl = (file) => new Promise((resolve, reject) => {
   const reader = new FileReader();
   reader.onload = () => resolve(reader.result);
