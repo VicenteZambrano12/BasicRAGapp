@@ -23,8 +23,10 @@ variable "member" {
   type        = string
 
   validation {
-    condition = contains(["allAuthenticatedUsers", "allUsers"], var.member) ||
+    condition = (
+      contains(["allAuthenticatedUsers", "allUsers"], var.member) ||
       can(regex("^(serviceAccount|user|group|domain):[^[:space:]]+$", var.member))
+    )
     error_message = "member must be a supported IAM principal such as serviceAccount:<email>, user:<email>, or allUsers."
   }
 }
