@@ -22,6 +22,12 @@ variable "vpc_subnet_cidr" {
   default     = "10.10.0.0/24"
 }
 
+variable "qdrant_image" {
+  description = "Boot disk source image/family for the qdrant-server VM; debian-11 was removed from the public catalog (EOL), so this defaults to the current Debian LTS"
+  type        = string
+  default     = "debian-cloud/debian-12"
+}
+
 variable "qdrant_sa_id" {
   description = "Account ID (short name) for the least-privilege service account used by the qdrant VM"
   type        = string
