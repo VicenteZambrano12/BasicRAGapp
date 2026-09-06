@@ -1,6 +1,8 @@
 import hashlib
 import mimetypes
 import os
+import re
+import uuid
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -13,7 +15,7 @@ from langchain_community.document_loaders import PyPDFLoader
 from langchain_core.embeddings import Embeddings
 from tenacity import retry, stop_after_attempt, wait_exponential
 
-load_dotenv()
+load_dotenv(override=True)
 
 # Assuming these are available in your repository structure
 from src.config.config_loader import config
@@ -56,15 +58,9 @@ def clean_text(text: str) -> str:
     return "\n\n".join(paragraph for paragraph in paragraphs if paragraph)
 
 def extract_folder_and_subject(path: str):
-    """Extract folder name and subject from file path."""
+    """Derive the collection name from the immediate parent folder, e.g. content/Biologia/*.pdf -> 'biologia'."""
     folder_name = os.path.basename(os.path.dirname(path))
-    filename = os.path.splitext(os.path.basename(path))[0]
-    
-    suffix = f"_{folder_name.lower()}"
-    if filename.lower().endswith(suffix):
-        subject = filename[: -len(suffix)]
-    else:
-        subject = filename
+    subject = re.sub(r"[^a-z0-9_]+", "_", folder_name.strip().lower()).strip("_")
     return folder_name, subject
 
 
@@ -208,10 +204,13 @@ def create_vector_db(path: str, bucket: "storage.Bucket", content_root: str, use
 
     # Chunk position/count depends on the final valid_splits list, so it is
     # assigned in a second pass once empty chunks have been filtered out.
+    point_ids = []
     for index, doc in enumerate(valid_splits):
         doc.metadata['chunk_index'] = index
         doc.metadata['chunk_count'] = len(valid_splits)
         doc.metadata['chunk_id'] = f"{relative_path}:{index:06d}"
+        # Deterministic ID: reruns upsert the same point instead of duplicating it.
+        point_ids.append(str(uuid.uuid5(uuid.NAMESPACE_URL, doc.metadata['chunk_id'])))
 
     all_splits = valid_splits
     
@@ -222,12 +221,13 @@ def create_vector_db(path: str, bucket: "storage.Bucket", content_root: str, use
     failed_docs = []
     for i in range(0, len(all_splits), batch_size):
         batch = all_splits[i:i + batch_size]
+        batch_ids = point_ids[i:i + batch_size]
         try:
-            vector_store.add_documents(documents=batch)
+            vector_store.add_documents(documents=batch, ids=batch_ids)
         except Exception as e:
             for j, doc in enumerate(batch):
                 try:
-                    vector_store.add_documents(documents=[doc])
+                    vector_store.add_documents(documents=[doc], ids=[batch_ids[j]])
                 except Exception as doc_error:
                     failed_docs.append((i+j, doc, str(doc_error)))
     
@@ -235,6 +235,9 @@ def create_vector_db(path: str, bucket: "storage.Bucket", content_root: str, use
         print(f"\n⚠ Warning: {len(failed_docs)} documents failed to add")
     else:
         print(f"✓ All documents added successfully")
+        # Safe to prune now: every current chunk was just (re)upserted successfully,
+        # so any stored chunk at or beyond this count must be stale.
+        vector_store.delete_stale_chunks(relative_path, len(all_splits))
         
     return subject
 
