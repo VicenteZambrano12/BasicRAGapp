@@ -91,15 +91,6 @@ module "qdrant_firewall" {
   ]
 }
 
-# New GCS bucket for application assets.
-module "app_assets_bucket" {
-  source = "../../modules/gcs_bucket"
-
-  project_id  = var.project_id
-  bucket_name = var.assets_bucket_name
-  location    = var.region
-}
-
 # New GCS bucket for application docs.
 module "docs_bucket" {
   source = "../../modules/gcs_bucket"
@@ -119,15 +110,6 @@ module "asset_uploader_sa" {
   display_name = "Asset uploader (least privilege)"
 }
 
-# Grant object-admin scoped only to the assets bucket, not project-wide storage roles.
-module "asset_uploader_object_admin" {
-  source = "../../modules/gcs_bucket_iam"
-
-  bucket_name = module.app_assets_bucket.name
-  role        = "roles/storage.objectAdmin"
-  member      = "serviceAccount:${module.asset_uploader_sa.email}"
-}
-
 # Grant object-admin scoped only to the docs bucket, not project-wide storage roles.
 module "asset_uploader_docs_object_admin" {
   source = "../../modules/gcs_bucket_iam"
@@ -135,15 +117,6 @@ module "asset_uploader_docs_object_admin" {
   bucket_name = module.docs_bucket.name
   role        = "roles/storage.objectAdmin"
   member      = "serviceAccount:${module.asset_uploader_sa.email}"
-}
-
-# Upload local files into the assets bucket. Populate var.local_asset_files with
-# { "<destination-object-name>" = "<local-file-path>" } entries.
-module "app_asset_files" {
-  source = "../../modules/gcs_bucket_object"
-
-  bucket_name = module.app_assets_bucket.name
-  files       = var.local_asset_files
 }
 
 # Upload local files into the docs bucket. Populate var.local_doc_files with
