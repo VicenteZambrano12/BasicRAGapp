@@ -1,6 +1,12 @@
 ﻿import React, { useEffect, useState } from 'react';
 import { createHowItWorksPdfUrl } from '../utils/howItWorksPdf';
 
+/**
+ * Renders the application shell and the How It Works PDF dialog.
+ *
+ * @param {{ children: React.ReactNode, translations: Record<string, string> }} props
+ * @returns {React.ReactElement}
+ */
 export const AppLayout = ({ children, translations }) => {
   const [pdfUrl, setPdfUrl] = useState(null);
 

@@ -1,6 +1,11 @@
 ﻿import { useEffect, useRef, useState } from 'react';
 import { createSystem, fileToDataUrl, sendChatMessage } from '../../../lib/api';
 
+/**
+ * Manages the active study configuration, chat messages, and API request state.
+ *
+ * @returns {{ config: object, updateConfig: Function, messages: Array<object>, sendMessage: Function, isLoading: boolean, error: string }}
+ */
 export const useChatStore = () => {
   const sessionId = useRef(crypto.randomUUID()).current;
   const [config, setConfig] = useState({

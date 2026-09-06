@@ -3,6 +3,7 @@ import { AppLayout } from '../layouts/AppLayout';
 import { StudyConfig, ChatInterface, useChatStore } from '../features/ai-chat';
 import { getTranslations } from '../i18n';
 
+/** Renders the study configuration and AI chat workspace. */
 export const ChatPage = () => {
   const { config, updateConfig, messages, sendMessage, isLoading, error } = useChatStore();
   const translations = getTranslations(config.language);
