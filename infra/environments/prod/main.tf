@@ -1,8 +1,23 @@
+# Module: prod
+# Purpose: Deploy the production networking, Qdrant VM, IAM identities, storage, and document objects for BasicRAGapp.
+# Usage:
+#   terraform -chdir=infra/environments/prod init
+#   terraform -chdir=infra/environments/prod plan
+locals {
+  resource_labels = {
+    managedby = "terraform"
+    portfolio = "yes"
+    project   = "basicragapp"
+    env       = "prod"
+  }
+}
+
 module "vpc" {
   source = "../../modules/vpc"
 
   project_id = var.project_id
   name       = "portfolio-demo-vpc"
+  labels     = local.resource_labels
 
   subnets = [
     {
@@ -52,6 +67,7 @@ module "qdrant_server" {
   network      = module.vpc.self_link
   subnetwork   = module.vpc.subnet_self_links["basic-rag-app-subnet"]
   tags         = ["qdrant-server"]
+  labels       = local.resource_labels
 
   service_account_email = module.qdrant_vm_sa.email
   service_account_scopes = [
@@ -91,13 +107,13 @@ module "qdrant_firewall" {
   ]
 }
 
-# New GCS bucket for application docs.
 module "docs_bucket" {
   source = "../../modules/gcs_bucket"
 
   project_id  = var.project_id
   bucket_name = var.docs_bucket_name
   location    = var.region
+  labels      = local.resource_labels
 }
 
 # Least-privilege service account dedicated to uploading assets, instead of

@@ -1,3 +1,13 @@
+# Module: firewall_rule
+# Purpose: Create a Google Compute Engine firewall rule with explicit traffic sources and allowed protocols.
+# Usage:
+#   module "firewall" {
+#     source = "./modules/firewall_rule"
+#     project_id = var.project_id
+#     name = "allow-app"
+#     network = var.network
+#     allowed = [{ protocol = "tcp", ports = ["443"] }]
+#   }
 resource "google_compute_firewall" "this" {
   name      = var.name
   project   = var.project_id

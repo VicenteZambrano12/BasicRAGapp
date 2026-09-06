@@ -1,9 +1,23 @@
+# Module: compute_instance
+# Purpose: Create a Google Compute Engine VM with optional networking, metadata, labels, and a dedicated service account.
+# Usage:
+#   module "vm" {
+#     source = "./modules/compute_instance"
+#     name = "app-vm"
+#     project_id = var.project_id
+#     zone = "us-central1-a"
+#     machine_type = "e2-micro"
+#     image = "debian-cloud/debian-12"
+#   }
 resource "google_compute_instance" "this" {
   name         = var.name
   project      = var.project_id
   zone         = var.zone
   machine_type = var.machine_type
   tags         = var.tags
+  labels = merge(var.labels, {
+    name = "${lookup(var.labels, "project", var.project_id)}_${var.name}"
+  })
 
   boot_disk {
     initialize_params {
