@@ -17,6 +17,12 @@ The `frontend/src` module renders the PAUHelper application workspace. It manage
 
 The frontend relies on React, ReactDOM, Vite, and Tailwind CSS. Chat configuration, messages, request state, and errors are managed through the `useChatStore` hook. Backend requests use the `VITE_API_URL` environment variable and default to `http://localhost:8000`.
 
+## Backend API Module
+
+The `src/api` module exposes the FastAPI entry point for PAUHelper. It composes the application lifecycle, publishes localized study configuration, initializes session-specific retrieval systems, and handles text or image-assisted chat requests.
+
+Key endpoints include `GET /` for health and cache diagnostics, `GET /config` for localized communities and subjects, `POST /create_system` for session system initialization, and `POST /chat` for assistant responses.
+
 ## Requirements
 
 - Python 3.12 or later

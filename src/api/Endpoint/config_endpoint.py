@@ -11,8 +11,17 @@ router = APIRouter()
 CONFIG_DIRECTORY = Path(__file__).resolve().parents[2] / "config"
 
 
-@router.get("/config", response_model=Dict[str, List[str]])
-async def get_config(language: Literal["ES", "EN"] = "ES"):
+@router.get(
+    "/config",
+    response_model=Dict[str, List[str]],
+    summary="Get study configuration",
+    description=(
+        "Return the available autonomous communities and subjects for the "
+        "requested language."
+    ),
+    response_description="Localized study configuration options.",
+)
+async def get_config(language: Literal["ES", "EN"] = "ES") -> Dict[str, List[str]]:
     """Return autonomous communities and subjects for the requested language."""
 
     config_path = CONFIG_DIRECTORY / f"{language.lower()}.config.json"
