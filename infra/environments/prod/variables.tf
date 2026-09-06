@@ -39,11 +39,6 @@ variable "qdrant_allowed_source_ranges" {
   type        = list(string)
 }
 
-variable "assets_bucket_name" {
-  description = "Globally unique name for the new application assets GCS bucket"
-  type        = string
-}
-
 variable "docs_bucket_name" {
   description = "Globally unique name for the new application docs GCS bucket"
   type        = string
@@ -53,17 +48,6 @@ variable "asset_uploader_sa_id" {
   description = "Account ID (short name) for the least-privilege service account used to upload assets"
   type        = string
   default     = "asset-uploader"
-}
-
-# Placeholder: map of object keys to local file paths to upload into the assets bucket.
-# Populate in terraform.tfvars, e.g.:
-# local_asset_files = {
-#   "docs/readme.pdf" = "/absolute/path/to/local/readme.pdf"
-# }
-variable "local_asset_files" {
-  description = "Map of destination object names to local file paths to upload"
-  type        = map(string)
-  default     = {}
 }
 
 # Placeholder: map of object keys to local file paths to upload into the docs bucket.

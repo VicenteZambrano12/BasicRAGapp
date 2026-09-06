@@ -1,8 +1,3 @@
-output "assets_bucket_url" {
-  description = "URL of the application assets bucket"
-  value       = module.app_assets_bucket.url
-}
-
 output "docs_bucket_url" {
   description = "URL of the application docs bucket"
   value       = module.docs_bucket.url
