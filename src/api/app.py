@@ -6,15 +6,14 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from qdrant_client import QdrantClient
 
 from src.api.Endpoint.chat_endpoint import router as chat_router
 from src.api.Endpoint.config_endpoint import router as config_router
 from src.api.Endpoint.create_system_endpoint import router as create_system_router
 from src.api.Endpoint.home_endpoint import router as home_router
-from src.config.config_loader import config
+from src.utils.cache import graph_config_cache, graph_instance_cache
 from src.utils.create_system import get_embeddings
-from src.utils.redis_funcs import graph_config_cache, graph_instance_cache
+from vector_db.manager import get_qdrant_client
 
 
 logging.basicConfig(level=logging.INFO)
@@ -36,10 +35,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
 
     logger.info("[STARTUP] Testing Qdrant connection...")
     try:
-        qdrant_host = config("QDRANT_HOST") if config("QDRANT_HOST") else "qdrant"
-        qdrant_port = int(config("QDRANT_PORT")) if config("QDRANT_PORT") else 6333
-
-        test_client = QdrantClient(host=qdrant_host, port=qdrant_port, timeout=5)
+        test_client = get_qdrant_client(timeout=5)
         collections = test_client.get_collections()
         logger.info(
             f"[STARTUP] Qdrant connected successfully ({len(collections.collections)} collections)"

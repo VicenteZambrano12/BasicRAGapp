@@ -1,8 +1,8 @@
 """Create-system helper that builds and caches a new graph instance."""
 
 import logging
+from src.utils.cache import graph_instance_cache, save_graph_config_to_cache
 from src.utils.create_system import create_system
-from src.utils.redis_funcs import graph_instance_cache, save_graph_config_to_cache
 
 
 logger = logging.getLogger(__name__)

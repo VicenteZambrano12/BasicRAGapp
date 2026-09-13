@@ -4,7 +4,7 @@ import json
 import logging
 from typing import List, Dict, Tuple
 
-from src.utils.redis_funcs import get_str_field_from_cache
+from src.utils.cache import get_str_field_from_cache
 
 
 logger = logging.getLogger(__name__)

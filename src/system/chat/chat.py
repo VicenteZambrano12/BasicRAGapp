@@ -16,8 +16,8 @@ from src.system.chat.load_memory_context import load_memory_context
 from src.system.chat.run_graph_stream import run_graph_stream
 from src.system.chat.update_memory_and_log import update_memory_and_log
 from src.system.others.cache_key import build_cache_key
-from src.utils.image_read import image_read
-from src.utils.token_counter import get_token_counter
+from src.utils.chat import image_read
+from src.utils.observability import get_token_counter
 
 
 logger = logging.getLogger(__name__)

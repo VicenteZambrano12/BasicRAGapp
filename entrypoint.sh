@@ -16,7 +16,7 @@ fi
 
 echo "Starting Gunicorn with $WORKERS workers on $CPU_COUNT CPUs"
 
-exec /opt/venv/bin/gunicorn \
+exec uv run gunicorn \
   -k uvicorn.workers.UvicornWorker \
   src.app:app \
   --bind "0.0.0.0:${PORT:-8080}" \

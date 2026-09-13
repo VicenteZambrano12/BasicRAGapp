@@ -1,6 +1,6 @@
 """Create-system helper that ensures an existing cached graph is loaded."""
 
-from src.utils.redis_funcs import get_or_create_graph
+from src.utils.cache import get_or_create_graph
 
 
 def ensure_cached_graph(cache_key: str, category: str, subject: str) -> None:
