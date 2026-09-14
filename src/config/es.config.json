@@ -1,0 +1,150 @@
+{
+  "communities": [
+    "Andalucía",
+    "Aragón",
+    "Asturias",
+    "Islas Baleares",
+    "Canarias",
+    "Cantabria",
+    "Castilla-La Mancha",
+    "Castilla y León",
+    "Cataluña",
+    "Extremadura",
+    "Galicia",
+    "La Rioja",
+    "Comunidad de Madrid",
+    "Región de Murcia",
+    "Comunidad Foral de Navarra",
+    "País Vasco",
+    "Comunidad Valenciana"
+  ],
+  "subjects": [
+    "Historia del Arte",
+    "Biología",
+    "Química",
+    "Economía",
+    "Inglés",
+    "Historia",
+    "Lengua Castellana y Literatura",
+    "Filosofía",
+    "Física",
+    "Matemáticas Aplicadas",
+    "Matemáticas II"
+  ],
+  "community_map": {
+    "andalucia": {
+      "label": "Andalucía",
+      "folder": "Andalucia"
+    },
+    "aragon": {
+      "label": "Aragón",
+      "folder": "Aragon"
+    },
+    "asturias": {
+      "label": "Asturias",
+      "folder": "Asturias"
+    },
+    "baleares": {
+      "label": "Islas Baleares",
+      "folder": "Baleares"
+    },
+    "canarias": {
+      "label": "Canarias",
+      "folder": "Canarias"
+    },
+    "cantabria": {
+      "label": "Cantabria",
+      "folder": "Cantabria"
+    },
+    "castilla_la_mancha": {
+      "label": "Castilla-La Mancha",
+      "folder": "CastillaLaMancha"
+    },
+    "castilla_leon": {
+      "label": "Castilla y León",
+      "folder": "CastillaLeon"
+    },
+    "cataluna": {
+      "label": "Cataluña",
+      "folder": "Cataluna"
+    },
+    "extremadura": {
+      "label": "Extremadura",
+      "folder": "Extremadura"
+    },
+    "galicia": {
+      "label": "Galicia",
+      "folder": "Galicia"
+    },
+    "la_rioja": {
+      "label": "La Rioja",
+      "folder": "LaRioja"
+    },
+    "madrid": {
+      "label": "Comunidad de Madrid",
+      "folder": "Madrid"
+    },
+    "murcia": {
+      "label": "Región de Murcia",
+      "folder": "Murcia"
+    },
+    "navarra": {
+      "label": "Comunidad Foral de Navarra",
+      "folder": "Navarra"
+    },
+    "pais_vasco": {
+      "label": "País Vasco",
+      "folder": "PaisVasco"
+    },
+    "valencia": {
+      "label": "Comunidad Valenciana",
+      "folder": "Valencia"
+    }
+  },
+  "subject_map": {
+    "art_history": {
+      "label": "Historia del Arte",
+      "collection": "arthistory"
+    },
+    "biology": {
+      "label": "Biología",
+      "collection": "biology"
+    },
+    "chemistry": {
+      "label": "Química",
+      "collection": "chemistry"
+    },
+    "economics": {
+      "label": "Economía",
+      "collection": "economy"
+    },
+    "english": {
+      "label": "Inglés",
+      "collection": "english"
+    },
+    "history": {
+      "label": "Historia",
+      "collection": "history"
+    },
+    "spanish_language_and_literature": {
+      "label": "Lengua Castellana y Literatura",
+      "collection": "language"
+    },
+    "philosophy": {
+      "label": "Filosofía",
+      "collection": "philosofy"
+    },
+    "physics": {
+      "label": "Física",
+      "collection": "physics"
+    },
+    "applied_mathematics": {
+      "label": "Matemáticas Aplicadas",
+      "collection": "scientistmath"
+    },
+    "mathematics_ii": {
+      "label": "Matemáticas II",
+      "collection": "socialsmath"
+    }
+  }
+}
