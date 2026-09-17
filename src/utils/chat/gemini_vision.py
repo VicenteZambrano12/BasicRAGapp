@@ -22,9 +22,8 @@ def _get_vision_model() -> ChatGoogleGenerativeAI:
     global _vision_model
     if _vision_model is None:
         model_name = config("LLM_MODEL", default="gemini-2.5-flash-lite")
-        _vision_model = ChatGoogleGenerativeAI(
-            model=model_name, google_api_key=config("GCP_API_KEY", default=None)
-        )
+        api_key = config("GEMINI_API_KEY", default=None) or config("GCP_API_KEY", default=None)
+        _vision_model = ChatGoogleGenerativeAI(model=model_name, google_api_key=api_key)
     return _vision_model
 
 

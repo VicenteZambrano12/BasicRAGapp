@@ -3,10 +3,10 @@
 /**
  * Renders controls for the learner's region, subject, and language.
  *
- * @param {{ config: object, onConfigChange: Function, translations: Record<string, string> }} props
+ * @param {{ config: object, onConfigChange: Function, communities: Array<string>, subjects: Array<string>, translations: Record<string, string> }} props
  * @returns {React.ReactElement}
  */
-export const StudyConfig = ({ config, onConfigChange, translations }) => {
+export const StudyConfig = ({ config, onConfigChange, communities, subjects, translations }) => {
   return (
     <section className="flex flex-col gap-5 rounded-xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
       <div>
@@ -22,13 +22,9 @@ export const StudyConfig = ({ config, onConfigChange, translations }) => {
           onChange={(e) => onConfigChange('region', e.target.value)}
           className="min-h-11 rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-700 transition-shadow focus:border-blue-700 focus:outline-none focus:ring-4 focus:ring-blue-700/20"
         >
-          <option value="Madrid">Madrid</option>
-          <option value="Cataluña">Cataluña</option>
-          <option value="Andalucía">Andalucía</option>
-          <option value="Comunidad Valenciana">Comunidad Valenciana</option>
-          <option value="Galicia">Galicia</option>
-          <option value="Castilla y León">Castilla y León</option>
-          <option value="País Vasco">País Vasco</option>
+          {communities.map((community) => (
+            <option key={community} value={community}>{community}</option>
+          ))}
         </select>
       </div>
 
@@ -40,12 +36,9 @@ export const StudyConfig = ({ config, onConfigChange, translations }) => {
           onChange={(e) => onConfigChange('subject', e.target.value)}
           className="min-h-11 rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-700 transition-shadow focus:border-blue-700 focus:outline-none focus:ring-4 focus:ring-blue-700/20"
         >
-          <option value="Historia de España">Historia de España</option>
-          <option value="Matemáticas II">Matemáticas II</option>
-          <option value="Lengua Castellana y Literatura">Lengua Castellana</option>
-          <option value="Biología">Biología</option>
-          <option value="Física">Física</option>
-          <option value="Química">Química</option>
+          {subjects.map((subject) => (
+            <option key={subject} value={subject}>{subject}</option>
+          ))}
         </select>
       </div>
 

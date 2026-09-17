@@ -32,7 +32,8 @@ def _build_llm():
         return VertexSelfDeployedLLM()
 
     llm_model = config("LLM_MODEL", default="gemini-2.5-flash-lite")
-    return ChatGoogleGenerativeAI(model=llm_model, google_api_key=config("GCP_API_KEY", default=None))
+    api_key = config("GEMINI_API_KEY", default=None) or config("GCP_API_KEY", default=None)
+    return ChatGoogleGenerativeAI(model=llm_model, google_api_key=api_key)
 
 
 def create_system(subject: str, community: str):
