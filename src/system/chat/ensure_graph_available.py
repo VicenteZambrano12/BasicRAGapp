@@ -3,7 +3,7 @@
 import logging
 from fastapi import HTTPException
 
-from src.utils.redis_funcs import get_or_create_graph, load_graph_config_from_cache
+from src.utils.cache import get_or_create_graph, load_graph_config_from_cache
 
 
 logger = logging.getLogger(__name__)

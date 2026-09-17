@@ -18,6 +18,12 @@ async function request(path, options = {}) {
   return response.json();
 }
 
+/** Checks backend availability, called on app load/reload. */
+export const checkHealth = () => request('/', { method: 'GET' });
+
+/** Fetches the localized autonomous communities and subjects. */
+export const getConfig = (language = 'ES') => request(`/config?language=${language}`, { method: 'GET' });
+
 /** Creates or updates the backend study context for a chat session. */
 export const createSystem = (payload) => request('/create_system', {
   method: 'POST',

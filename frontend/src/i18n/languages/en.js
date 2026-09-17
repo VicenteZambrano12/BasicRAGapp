@@ -1,5 +1,6 @@
 const en = {
   appTagline: 'Your AI assistant for the PAU',
+  backendUnavailable: 'Unable to reach the backend service. Some features may not work.',
   studyConfig: 'Study Configuration',
   studyConfigHint: 'Customize the context for your answers.',
   regionLabel: 'Select your autonomous community:',
@@ -14,6 +15,7 @@ const en = {
   inputLabel: 'Question for the AI',
   removeImage: 'Remove attached image',
   uploadPreview: 'Attached image preview',
+  sourcesLabel: 'Sources:',
   inputPlaceholder: 'Write your exam question here...',
   attachImage: 'Attach an image of a problem or exam',
   send: 'Send',

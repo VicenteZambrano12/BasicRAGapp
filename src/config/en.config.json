@@ -1,0 +1,150 @@
+{
+  "communities": [
+    "Andalusia",
+    "Aragon",
+    "Asturias",
+    "Balearic Islands",
+    "Canary Islands",
+    "Cantabria",
+    "Castile-La Mancha",
+    "Castile and Leon",
+    "Catalonia",
+    "Extremadura",
+    "Galicia",
+    "La Rioja",
+    "Community of Madrid",
+    "Region of Murcia",
+    "Chartered Community of Navarre",
+    "Basque Country",
+    "Valencian Community"
+  ],
+  "subjects": [
+    "Art History",
+    "Biology",
+    "Chemistry",
+    "Economics",
+    "English",
+    "History",
+    "Spanish Language and Literature",
+    "Philosophy",
+    "Physics",
+    "Applied Mathematics",
+    "Mathematics II"
+  ],
+  "community_map": {
+    "andalucia": {
+      "label": "Andalusia",
+      "folder": "Andalucia"
+    },
+    "aragon": {
+      "label": "Aragon",
+      "folder": "Aragon"
+    },
+    "asturias": {
+      "label": "Asturias",
+      "folder": "Asturias"
+    },
+    "baleares": {
+      "label": "Balearic Islands",
+      "folder": "Baleares"
+    },
+    "canarias": {
+      "label": "Canary Islands",
+      "folder": "Canarias"
+    },
+    "cantabria": {
+      "label": "Cantabria",
+      "folder": "Cantabria"
+    },
+    "castilla_la_mancha": {
+      "label": "Castile-La Mancha",
+      "folder": "CastillaLaMancha"
+    },
+    "castilla_leon": {
+      "label": "Castile and Leon",
+      "folder": "CastillaLeon"
+    },
+    "cataluna": {
+      "label": "Catalonia",
+      "folder": "Cataluna"
+    },
+    "extremadura": {
+      "label": "Extremadura",
+      "folder": "Extremadura"
+    },
+    "galicia": {
+      "label": "Galicia",
+      "folder": "Galicia"
+    },
+    "la_rioja": {
+      "label": "La Rioja",
+      "folder": "LaRioja"
+    },
+    "madrid": {
+      "label": "Community of Madrid",
+      "folder": "Madrid"
+    },
+    "murcia": {
+      "label": "Region of Murcia",
+      "folder": "Murcia"
+    },
+    "navarra": {
+      "label": "Chartered Community of Navarre",
+      "folder": "Navarra"
+    },
+    "pais_vasco": {
+      "label": "Basque Country",
+      "folder": "PaisVasco"
+    },
+    "valencia": {
+      "label": "Valencian Community",
+      "folder": "Valencia"
+    }
+  },
+  "subject_map": {
+    "art_history": {
+      "label": "Art History",
+      "collection": "arthistory"
+    },
+    "biology": {
+      "label": "Biology",
+      "collection": "biology"
+    },
+    "chemistry": {
+      "label": "Chemistry",
+      "collection": "chemistry"
+    },
+    "economics": {
+      "label": "Economics",
+      "collection": "economy"
+    },
+    "english": {
+      "label": "English",
+      "collection": "english"
+    },
+    "history": {
+      "label": "History",
+      "collection": "history"
+    },
+    "spanish_language_and_literature": {
+      "label": "Spanish Language and Literature",
+      "collection": "language"
+    },
+    "philosophy": {
+      "label": "Philosophy",
+      "collection": "philosofy"
+    },
+    "physics": {
+      "label": "Physics",
+      "collection": "physics"
+    },
+    "applied_mathematics": {
+      "label": "Applied Mathematics",
+      "collection": "scientistmath"
+    },
+    "mathematics_ii": {
+      "label": "Mathematics II",
+      "collection": "socialsmath"
+    }
+  }
+}

@@ -1,7 +1,7 @@
 """Root chat orchestration function used by the chat endpoint."""
 
 import logging
-from typing import Dict, Optional
+from typing import Any, Dict
 
 from fastapi import HTTPException
 
@@ -11,19 +11,20 @@ from src.system.chat.build_chat_state import build_chat_state
 from src.system.chat.build_image_url import build_image_url
 from src.system.chat.build_memory_user_content import build_memory_user_content
 from src.system.chat.build_message_content import build_message_content
+from src.system.chat.build_sources import build_sources
 from src.system.chat.ensure_graph_available import ensure_graph_available
 from src.system.chat.load_memory_context import load_memory_context
 from src.system.chat.run_graph_stream import run_graph_stream
 from src.system.chat.update_memory_and_log import update_memory_and_log
 from src.system.others.cache_key import build_cache_key
-from src.utils.image_read import image_read
-from src.utils.token_counter import get_token_counter
+from src.utils.chat import image_read
+from src.utils.observability import get_token_counter
 
 
 logger = logging.getLogger(__name__)
 
 
-def execute_chat(data: ChatRequest) -> Dict[str, Optional[str]]:
+def execute_chat(data: ChatRequest) -> Dict[str, Any]:
     """Process one chat turn and return the assistant response payload."""
     session_id = data.session_id
     category = data.category
@@ -85,7 +86,8 @@ def execute_chat(data: ChatRequest) -> Dict[str, Optional[str]]:
     logger.info(f"[TOKEN COUNT] Initial input: {initial_counts['total']} tokens")
 
     try:
-        response_text, total_steps = run_graph_stream(graph, chat_state)
+        response_text, total_steps, retrieved_documents = run_graph_stream(graph, chat_state)
+        sources = build_sources(retrieved_documents)
 
         memory_user_content = build_memory_user_content(
             query=data.query,
@@ -102,7 +104,7 @@ def execute_chat(data: ChatRequest) -> Dict[str, Optional[str]]:
             total_steps=total_steps,
         )
 
-        return {"response": response_text}
+        return {"response": response_text, "sources": sources}
 
     except HTTPException:
         raise

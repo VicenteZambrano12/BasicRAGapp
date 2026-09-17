@@ -1,5 +1,6 @@
 const es = {
   appTagline: 'Tu asistente IA para la PAU',
+  backendUnavailable: 'No se pudo conectar con el backend. Algunas funciones pueden no estar disponibles.',
   studyConfig: 'Configuración del Estudio',
   studyConfigHint: 'Personaliza el contexto de tus respuestas.',
   regionLabel: 'Selecciona tu Comunidad Autónoma:',
@@ -13,6 +14,7 @@ const es = {
   loading: 'La IA está preparando una respuesta...',
   inputLabel: 'Pregunta para la IA',
   removeImage: 'Quitar imagen adjunta',
+  sourcesLabel: 'Fuentes:',
   uploadPreview: 'Vista previa de la imagen adjunta',
   inputPlaceholder: 'Escribe tu pregunta sobre el examen aquí...',
   attachImage: 'Adjuntar imagen de problema o examen',

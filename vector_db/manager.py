@@ -3,9 +3,51 @@ Vector Database Manager with automatic collection creation
 """
 import os
 from typing import Optional
+
+from dotenv import load_dotenv
 from langchain_qdrant import QdrantVectorStore
 from qdrant_client import QdrantClient
 from qdrant_client.models import Distance, FieldCondition, Filter, MatchValue, Range, VectorParams
+
+
+load_dotenv()
+
+def get_qdrant_client(timeout: Optional[float] = None) -> QdrantClient:
+    """
+    Build a QdrantClient from environment configuration.
+
+    Shared by QdrantVectorDB and the API startup health check so both use the
+    exact same connection target (an explicit QDRANT_URL, e.g. the migrated
+    Google Cloud Qdrant server, takes priority over QDRANT_HOST/QDRANT_PORT).
+    """
+    # Treat blank strings (e.g. an empty .env value) the same as unset, so
+    # defaults actually apply.
+    qdrant_url = (os.getenv("QDRANT_URL") or "").strip()
+    qdrant_host = (os.getenv("QDRANT_HOST") or "localhost").strip()
+    qdrant_port = int((os.getenv("QDRANT_PORT") or "6333").strip())
+    qdrant_api_key = (os.getenv("QDRANT_API_KEY") or "").strip()
+
+    # Accept a full endpoint in either QDRANT_URL or QDRANT_HOST.
+    if qdrant_host.startswith(("http://", "https://")) and not qdrant_url:
+        qdrant_url = qdrant_host
+
+    # Prefer an explicit URL over host:port.
+    if qdrant_url:
+        print(f"🌐 Connecting to Qdrant at: {qdrant_url}")
+        return QdrantClient(
+            url=qdrant_url,
+            api_key=qdrant_api_key if qdrant_api_key else None,
+            timeout=timeout,
+        )
+
+    print(f"🏠 Connecting to Qdrant at: {qdrant_host}:{qdrant_port}")
+    return QdrantClient(
+        host=qdrant_host,
+        port=qdrant_port,
+        api_key=qdrant_api_key if qdrant_api_key else None,
+        timeout=timeout,
+    )
+
 
 class QdrantVectorDB:
     """Qdrant Vector Database wrapper with auto-creation"""
@@ -13,32 +55,7 @@ class QdrantVectorDB:
     def __init__(self, collection_name: str, embeddings):
         self.collection_name = collection_name
         self.embeddings = embeddings
-        
-        # Get Qdrant configuration. Treat blank strings (e.g. an empty .env
-        # value) the same as unset, so defaults actually apply.
-        qdrant_url = (os.getenv("QDRANT_URL") or "").strip()
-        qdrant_host = (os.getenv("QDRANT_HOST") or "localhost").strip()
-        qdrant_port = int((os.getenv("QDRANT_PORT") or "6333").strip())
-        qdrant_api_key = (os.getenv("QDRANT_API_KEY") or "").strip()
-        
-        # Accept a full endpoint in either QDRANT_URL or QDRANT_HOST.
-        if qdrant_host.startswith(("http://", "https://")) and not qdrant_url:
-            qdrant_url = qdrant_host
-
-        # Create Qdrant client - prefer an explicit URL over host:port.
-        if qdrant_url:
-            print(f"🌐 Connecting to Qdrant at: {qdrant_url}")
-            self.client = QdrantClient(
-                url=qdrant_url,
-                api_key=qdrant_api_key if qdrant_api_key else None,
-            )
-        else:
-            print(f"🏠 Connecting to Qdrant at: {qdrant_host}:{qdrant_port}")
-            self.client = QdrantClient(
-                host=qdrant_host,
-                port=qdrant_port,
-                api_key=qdrant_api_key if qdrant_api_key else None,
-            )
+        self.client = get_qdrant_client()
         
         # Check if collection exists, create if not
         self._ensure_collection_exists()

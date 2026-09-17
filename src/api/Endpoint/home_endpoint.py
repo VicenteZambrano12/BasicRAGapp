@@ -2,7 +2,7 @@
 
 from typing import Any, Dict
 from fastapi import APIRouter
-from src.utils.redis_funcs import REDIS_ENABLED, graph_config_cache, graph_instance_cache
+from src.utils.cache import REDIS_ENABLED, graph_config_cache, graph_instance_cache
 
 
 router = APIRouter()

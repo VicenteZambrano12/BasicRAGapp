@@ -4,7 +4,7 @@ __pycache__/
 *.py[cod]
 .env
 src/docs
-config
+/config
 
 # Frontend dependencies, build output, and local environment files
 frontend/node_modules/

@@ -2,7 +2,7 @@
 
 import logging
 
-from src.utils.summary_func import update_conversation_memory
+from src.utils.cache import update_conversation_memory
 
 
 logger = logging.getLogger(__name__)
