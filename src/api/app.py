@@ -3,9 +3,12 @@
 import logging
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
+from pathlib import Path
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
 
 from src.api.Endpoint.chat_endpoint import router as chat_router
 from src.api.Endpoint.config_endpoint import router as config_router
@@ -14,6 +17,9 @@ from src.api.Endpoint.home_endpoint import router as home_router
 from src.utils.cache import graph_config_cache, graph_instance_cache
 from src.utils.create_system import get_embeddings
 from vector_db.manager import get_qdrant_client
+
+# Built frontend assets, produced by the frontend Docker build stage.
+FRONTEND_DIST = Path(__file__).resolve().parents[2] / "frontend_dist"
 
 
 logging.basicConfig(level=logging.INFO)
@@ -66,7 +72,21 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app.include_router(home_router)
-app.include_router(config_router)
-app.include_router(create_system_router)
-app.include_router(chat_router)
+app.include_router(home_router, prefix="/api")
+app.include_router(config_router, prefix="/api")
+app.include_router(create_system_router, prefix="/api")
+app.include_router(chat_router, prefix="/api")
+
+# Serve the built frontend (single-container deployment) when present; local
+# API-only dev (no frontend_dist) simply skips this block.
+if FRONTEND_DIST.is_dir():
+    app.mount("/assets", StaticFiles(directory=FRONTEND_DIST / "assets"), name="assets")
+
+    @app.get("/{full_path:path}", include_in_schema=False)
+    async def serve_frontend(full_path: str) -> FileResponse:
+        """Serve static frontend files, falling back to index.html for client-side routes."""
+
+        candidate = FRONTEND_DIST / full_path
+        if full_path and candidate.is_file():
+            return FileResponse(candidate)
+        return FileResponse(FRONTEND_DIST / "index.html")
