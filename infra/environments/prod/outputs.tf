@@ -17,3 +17,14 @@ output "qdrant_server_network_interfaces" {
   description = "Network interfaces of the qdrant-server VM instance"
   value       = module.qdrant_server.network_interfaces
 }
+
+output "app_service_url" {
+  description = "Public URL of the deployed Cloud Run application"
+  value       = module.app_service.uri
+}
+
+output "app_images_repository" {
+  description = "Fully qualified name of the Artifact Registry repository for app images"
+  value       = module.app_images.name
+}
+

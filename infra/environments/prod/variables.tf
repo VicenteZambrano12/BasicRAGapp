@@ -119,3 +119,64 @@ variable "local_doc_files" {
     error_message = "local_doc_files must map non-empty object names to existing local files."
   }
 }
+
+variable "app_image_repository_id" {
+  description = "Artifact Registry repository ID for the application container image"
+  type        = string
+  default     = "basicragapp"
+}
+
+variable "app_container_image" {
+  description = "Fully qualified container image reference deployed to Cloud Run (registry/repo:tag); updated by CI on each build"
+  type        = string
+
+  validation {
+    condition     = trimspace(var.app_container_image) != ""
+    error_message = "app_container_image must not be empty."
+  }
+}
+
+variable "app_sa_id" {
+  description = "Account ID (short name) for the least-privilege service account used by the Cloud Run app"
+  type        = string
+  default     = "basicragapp-app"
+}
+
+variable "cloud_run_service_name" {
+  description = "Name of the Cloud Run service running the application"
+  type        = string
+  default     = "basicragapp-app"
+}
+
+variable "vpc_connector_cidr" {
+  description = "Reserved /28 CIDR for the Serverless VPC Access connector; must not overlap other subnets in the VPC"
+  type        = string
+  default     = "10.10.1.0/28"
+
+  validation {
+    condition     = can(cidrhost(var.vpc_connector_cidr, 0))
+    error_message = "vpc_connector_cidr must be a valid CIDR range."
+  }
+}
+
+variable "llm_model" {
+  description = "LLM model identifier used by the application"
+  type        = string
+  default     = "gemini-2.0-flash"
+}
+
+variable "embedding_model" {
+  description = "Embedding model identifier used by the application"
+  type        = string
+}
+
+variable "gemini_api_key" {
+  description = "API key for the Gemini/Generative AI service used by the application"
+  type        = string
+  sensitive   = true
+
+  validation {
+    condition     = trimspace(var.gemini_api_key) != ""
+    error_message = "gemini_api_key must not be empty."
+  }
+}
