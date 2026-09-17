@@ -30,7 +30,7 @@ export const ChatInterface = ({ messages, onSendMessage, translations, isLoading
   const canSend = Boolean(input.trim() || selectedImage) && !isLoading;
 
   return (
-    <section className="flex h-[min(42rem,calc(100dvh-9rem))] min-h-[30rem] min-h-0 flex-col overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm sm:h-[min(44rem,calc(100dvh-10rem))] lg:h-full">
+    <section className="flex h-[min(42rem,calc(100dvh-9rem))] min-h-0 flex-col overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm sm:h-[min(44rem,calc(100dvh-10rem))] lg:h-full">
       <div className="border-b border-slate-200 px-4 py-4 sm:px-5">
         <h2 className="text-lg font-bold tracking-tight text-slate-900">{translations.chatTitle}</h2>
       </div>
@@ -54,6 +54,25 @@ export const ChatInterface = ({ messages, onSendMessage, translations, isLoading
               ) : (
                 <div className="prose prose-sm max-w-none prose-p:my-1 prose-pre:my-2 prose-headings:my-2 prose-ul:my-1 prose-ol:my-1">
                   <ReactMarkdown remarkPlugins={[remarkGfm]}>{msg.content}</ReactMarkdown>
+                </div>
+              )}
+              {msg.role === 'assistant' && msg.sources?.length > 0 && (
+                <div className="mt-3 border-t border-slate-200 pt-2">
+                  <p className="mb-1.5 text-[11px] font-semibold uppercase tracking-wide text-slate-500">{translations.sourcesLabel}</p>
+                  <div className="flex flex-wrap gap-2">
+                    {msg.sources.map((source) => (
+                      <button
+                        key={source.doc_id}
+                        type="button"
+                        onClick={() => window.open(`${source.url}#page=${source.page ?? 1}`, '_blank', 'noopener')}
+                        className="inline-flex items-center gap-1.5 rounded-full border border-blue-200 bg-blue-50 px-3 py-1 text-xs font-medium text-blue-800 transition-colors hover:border-blue-300 hover:bg-blue-100"
+                        title={source.file_name}
+                      >
+                        <span aria-hidden="true">📄</span>
+                        {source.file_name}{source.page ? ` · p.${source.page}` : ''}
+                      </button>
+                    ))}
+                  </div>
                 </div>
               )}
             </div>

@@ -101,7 +101,7 @@ export const useChatStore = () => {
         subject: config.subject,
         language: config.language,
       });
-      setMessages((prev) => [...prev, { id: crypto.randomUUID(), role: 'assistant', content: result.response || '' }]);
+      setMessages((prev) => [...prev, { id: crypto.randomUUID(), role: 'assistant', content: result.response || '', sources: result.sources || [] }]);
     } catch (requestError) {
       setError(requestError.message);
     } finally {

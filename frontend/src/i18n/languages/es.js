@@ -14,6 +14,7 @@ const es = {
   loading: 'La IA está preparando una respuesta...',
   inputLabel: 'Pregunta para la IA',
   removeImage: 'Quitar imagen adjunta',
+  sourcesLabel: 'Fuentes:',
   uploadPreview: 'Vista previa de la imagen adjunta',
   inputPlaceholder: 'Escribe tu pregunta sobre el examen aquí...',
   attachImage: 'Adjuntar imagen de problema o examen',

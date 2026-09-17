@@ -15,6 +15,7 @@ const en = {
   inputLabel: 'Question for the AI',
   removeImage: 'Remove attached image',
   uploadPreview: 'Attached image preview',
+  sourcesLabel: 'Sources:',
   inputPlaceholder: 'Write your exam question here...',
   attachImage: 'Attach an image of a problem or exam',
   send: 'Send',
