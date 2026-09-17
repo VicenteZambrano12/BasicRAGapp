@@ -1,4 +1,6 @@
 ﻿import React, { useState, useRef } from 'react';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 
 /**
  * Renders the conversation history and message composer.
@@ -39,15 +41,21 @@ export const ChatInterface = ({ messages, onSendMessage, translations, isLoading
         )}
         {messages.map((msg) => (
           <div key={msg.id} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-            <div className={`max-w-[88%] break-words rounded-2xl p-3.5 text-sm leading-relaxed whitespace-pre-wrap sm:max-w-[80%] ${
+            <div className={`max-w-[88%] break-words rounded-2xl p-3.5 text-sm leading-relaxed sm:max-w-[80%] ${
               msg.role === 'user' 
-                ? 'bg-blue-100 text-blue-900 rounded-br-none' 
+                ? 'bg-blue-100 text-blue-900 rounded-br-none whitespace-pre-wrap' 
                 : 'bg-gray-100 text-gray-800 rounded-bl-none'
             }`}>
               {msg.image && (
                 <img src={msg.image} alt={translations.uploadPreview} className="mb-2 max-h-64 max-w-full rounded-lg border border-slate-200 object-contain" />
               )}
-              {msg.content}
+              {msg.role === 'user' ? (
+                msg.content
+              ) : (
+                <div className="prose prose-sm max-w-none prose-p:my-1 prose-pre:my-2 prose-headings:my-2 prose-ul:my-1 prose-ol:my-1">
+                  <ReactMarkdown remarkPlugins={[remarkGfm]}>{msg.content}</ReactMarkdown>
+                </div>
+              )}
             </div>
           </div>
         ))}
