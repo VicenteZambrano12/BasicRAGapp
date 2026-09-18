@@ -168,6 +168,7 @@ variable "llm_model" {
 variable "embedding_model" {
   description = "Embedding model identifier used by the application"
   type        = string
+  default     = "text-embedding-004"
 }
 
 variable "gemini_api_key" {

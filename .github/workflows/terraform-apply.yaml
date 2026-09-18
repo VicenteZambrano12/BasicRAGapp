@@ -26,14 +26,16 @@ permissions:
 
 env:
   TF_WORKING_DIR: infra/environments/prod
-  PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
-  REGION: ${{ secrets.GCP_REGION }}
+  # project_id/region are not sensitive - they match the committed defaults in
+  # infra/environments/prod/variables.tf and terraform.tfvars, so no secret is needed.
+  PROJECT_ID: basicrahgapp
+  REGION: europe-southwest1
   REPOSITORY: basicragapp
   SERVICE: basicragapp-app
   TF_VAR_qdrant_api_key: ${{ secrets.QDRANT_API_KEY }}
-  TF_VAR_qdrant_allowed_source_ranges: ${{ secrets.QDRANT_ALLOWED_SOURCE_RANGES }}
+  # CIDR ranges aren't credentials, so this is a repo Variable, not a Secret.
+  TF_VAR_qdrant_allowed_source_ranges: ${{ vars.QDRANT_ALLOWED_SOURCE_RANGES }}
   TF_VAR_gemini_api_key: ${{ secrets.GEMINI_API_KEY }}
-  TF_VAR_embedding_model: ${{ secrets.EMBEDDING_MODEL }}
 
 jobs:
   build-and-deploy:
