@@ -32,10 +32,8 @@ env:
   REGION: europe-southwest1
   REPOSITORY: basicragapp
   SERVICE: basicragapp-app
-  TF_VAR_qdrant_api_key: ${{ secrets.QDRANT_API_KEY }}
   # CIDR ranges aren't credentials, so this is a repo Variable, not a Secret.
   TF_VAR_qdrant_allowed_source_ranges: ${{ vars.QDRANT_ALLOWED_SOURCE_RANGES }}
-  TF_VAR_gemini_api_key: ${{ secrets.GEMINI_API_KEY }}
 
 jobs:
   build-and-deploy:

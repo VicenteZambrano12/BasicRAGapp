@@ -38,3 +38,13 @@ output "demo_app_service_account_email" {
   value       = module.demo_app_sa.email
 }
 
+output "qdrant_api_key_secret_id" {
+  description = "Secret ID of the qdrant API key secret (populate its value manually via gcloud/populate_demo_secret.py)"
+  value       = module.qdrant_api_key_secret.secret_id
+}
+
+output "gemini_api_key_secret_id" {
+  description = "Secret ID of the Gemini API key secret (populate its value manually via gcloud/populate_demo_secret.py)"
+  value       = module.gemini_api_key_secret.secret_id
+}
+

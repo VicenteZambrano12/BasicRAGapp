@@ -64,17 +64,6 @@ variable "qdrant_sa_id" {
   }
 }
 
-variable "qdrant_api_key" {
-  description = "API key used to secure access to the qdrant server"
-  type        = string
-  sensitive   = true
-
-  validation {
-    condition     = trimspace(var.qdrant_api_key) != ""
-    error_message = "qdrant_api_key must not be empty."
-  }
-}
-
 variable "qdrant_allowed_source_ranges" {
   description = "CIDR ranges allowed to reach the qdrant server ports; keep as narrow as possible"
   type        = list(string)
@@ -169,17 +158,6 @@ variable "embedding_model" {
   description = "Embedding model identifier used by the application"
   type        = string
   default     = "text-embedding-004"
-}
-
-variable "gemini_api_key" {
-  description = "API key for the Gemini/Generative AI service used by the application"
-  type        = string
-  sensitive   = true
-
-  validation {
-    condition     = trimspace(var.gemini_api_key) != ""
-    error_message = "gemini_api_key must not be empty."
-  }
 }
 
 variable "demo_secret_id" {
