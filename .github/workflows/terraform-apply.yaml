@@ -26,14 +26,12 @@ permissions:
 
 env:
   TF_WORKING_DIR: infra/environments/prod
-  PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
-  REGION: ${{ secrets.GCP_REGION }}
+  # project_id/region are not sensitive - they match the committed defaults in
+  # infra/environments/prod/variables.tf and terraform.tfvars, so no secret is needed.
+  PROJECT_ID: basicrahgapp
+  REGION: europe-southwest1
   REPOSITORY: basicragapp
   SERVICE: basicragapp-app
-  TF_VAR_qdrant_api_key: ${{ secrets.QDRANT_API_KEY }}
-  TF_VAR_qdrant_allowed_source_ranges: ${{ secrets.QDRANT_ALLOWED_SOURCE_RANGES }}
-  TF_VAR_gemini_api_key: ${{ secrets.GEMINI_API_KEY }}
-  TF_VAR_embedding_model: ${{ secrets.EMBEDDING_MODEL }}
 
 jobs:
   build-and-deploy:
@@ -57,13 +55,6 @@ jobs:
       - name: Configure Docker for Artifact Registry
         run: gcloud auth configure-docker "${{ env.REGION }}-docker.pkg.dev" --quiet
 
-      - name: Build and push app image
-        run: |
-          IMAGE="${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/app:${{ github.sha }}"
-          docker build -t "$IMAGE" .
-          docker push "$IMAGE"
-          echo "TF_VAR_app_container_image=$IMAGE" >> "$GITHUB_ENV"
-
       - name: Set up Terraform
         uses: hashicorp/setup-terraform@v3
         with:
@@ -72,6 +63,24 @@ jobs:
       - name: Terraform Init
         working-directory: ${{ env.TF_WORKING_DIR }}
         run: terraform init
+
+      # Bootstrap step: on a first-ever run the Artifact Registry repo doesn't
+      # exist yet, so create just that resource before the image push below
+      # (which would otherwise fail with "Repository not found"). The real
+      # app_container_image value isn't known yet at this point and isn't
+      # used by this targeted apply, so a placeholder satisfies the variable.
+      - name: Terraform Apply (Artifact Registry only)
+        working-directory: ${{ env.TF_WORKING_DIR }}
+        env:
+          TF_VAR_app_container_image: bootstrap-placeholder
+        run: terraform apply -input=false -auto-approve -target=module.app_images
+
+      - name: Build and push app image
+        run: |
+          IMAGE="${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/app:${{ github.sha }}"
+          docker build -t "$IMAGE" .
+          docker push "$IMAGE"
+          echo "TF_VAR_app_container_image=$IMAGE" >> "$GITHUB_ENV"
 
       - name: Terraform Validate
         working-directory: ${{ env.TF_WORKING_DIR }}

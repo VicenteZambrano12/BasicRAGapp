@@ -3,6 +3,17 @@ set -e
 
 cd /app/
 
+# Cloud Run injects the whole Secret Manager blob as one JSON string;
+# split it into the individual env vars the app expects.
+if [ -n "${APP_SECRETS_JSON:-}" ]; then
+  eval "$(python3 -c '
+import json, os, shlex
+secrets = json.loads(os.environ["APP_SECRETS_JSON"])
+for key, value in secrets.items():
+    print(f"export {key}={shlex.quote(str(value))}")
+')"
+fi
+
 # Calculate workers based on CPU and memory constraints
 CPU_COUNT=$(nproc)
 WORKERS=${WORKERS:-$((CPU_COUNT * 2 + 1))}

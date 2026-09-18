@@ -43,5 +43,5 @@ variable "max_instances" {
 variable "machine_type" {
   description = "Machine type backing the connector instances"
   type        = string
-  default     = "f1-micro"
+  default     = "e2-micro"
 }

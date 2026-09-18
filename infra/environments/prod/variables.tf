@@ -64,24 +64,14 @@ variable "qdrant_sa_id" {
   }
 }
 
-variable "qdrant_api_key" {
-  description = "API key used to secure access to the qdrant server"
-  type        = string
-  sensitive   = true
-
-  validation {
-    condition     = trimspace(var.qdrant_api_key) != ""
-    error_message = "qdrant_api_key must not be empty."
-  }
-}
-
 variable "qdrant_allowed_source_ranges" {
-  description = "CIDR ranges allowed to reach the qdrant server ports; keep as narrow as possible"
+  description = "Extra CIDR ranges (besides the Cloud Run VPC connector) allowed to reach the qdrant server ports; empty by default since the app already reaches qdrant via the VPC connector firewall rule"
   type        = list(string)
+  default     = []
 
   validation {
-    condition     = length(var.qdrant_allowed_source_ranges) > 0 && alltrue([for range in var.qdrant_allowed_source_ranges : can(cidrhost(range, 0))])
-    error_message = "qdrant_allowed_source_ranges must contain at least one valid CIDR range."
+    condition     = alltrue([for range in var.qdrant_allowed_source_ranges : can(cidrhost(range, 0))])
+    error_message = "qdrant_allowed_source_ranges must contain only valid CIDR ranges."
   }
 }
 
@@ -168,37 +158,16 @@ variable "llm_model" {
 variable "embedding_model" {
   description = "Embedding model identifier used by the application"
   type        = string
+  default     = "text-embedding-004"
 }
 
-variable "gemini_api_key" {
-  description = "API key for the Gemini/Generative AI service used by the application"
+variable "app_secrets_id" {
+  description = "Secret Manager secret ID holding all runtime credentials as one JSON blob ({\"QDRANT_API_KEY\": \"...\", \"GEMINI_API_KEY\": \"...\"}); value populated manually via gcloud/config/populate_demo_secret.py, never through Terraform"
   type        = string
-  sensitive   = true
+  default     = "basicragapp-app-secrets"
 
   validation {
-    condition     = trimspace(var.gemini_api_key) != ""
-    error_message = "gemini_api_key must not be empty."
-  }
-}
-
-variable "demo_secret_id" {
-  description = "Secret Manager secret ID for the demo application secret; value populated manually via gcloud, never through Terraform"
-  type        = string
-  default     = "basicragapp-demo-secret"
-
-  validation {
-    condition     = can(regex("^[a-zA-Z0-9_-]{1,255}$", var.demo_secret_id))
-    error_message = "demo_secret_id must be 1-255 characters of letters, digits, underscores, or hyphens."
-  }
-}
-
-variable "demo_app_sa_id" {
-  description = "Account ID (short name) for the least-privilege service account granted access to the demo secret"
-  type        = string
-  default     = "basicragapp-demo-sa"
-
-  validation {
-    condition     = can(regex("^[a-z][a-z0-9-]{4,28}[a-z0-9]$", var.demo_app_sa_id))
-    error_message = "demo_app_sa_id must be a 6-30 character lowercase service account ID."
+    condition     = can(regex("^[a-zA-Z0-9_-]{1,255}$", var.app_secrets_id))
+    error_message = "app_secrets_id must be 1-255 characters of letters, digits, underscores, or hyphens."
   }
 }

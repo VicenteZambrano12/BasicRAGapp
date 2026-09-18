@@ -27,6 +27,18 @@ module "vpc" {
   ]
 }
 
+# Single secret container holding every runtime credential as one JSON blob
+# ({"QDRANT_API_KEY": "...", "GEMINI_API_KEY": "..."}). No version resource here -
+# the value is populated manually via config/populate_demo_secret.py or gcloud,
+# so it never enters the Terraform state file.
+module "app_secrets" {
+  source = "../../modules/secret_manager_secret"
+
+  project_id = var.project_id
+  secret_id  = var.app_secrets_id
+  labels     = local.resource_labels
+}
+
 # Least-privilege service account for the qdrant VM: only logging/monitoring
 # write access, no broad Compute or project-wide roles.
 module "qdrant_vm_sa" {
@@ -53,8 +65,18 @@ module "qdrant_vm_monitoring" {
   member     = "serviceAccount:${module.qdrant_vm_sa.email}"
 }
 
+# Scoped only to the shared app secret, not project-wide.
+module "qdrant_vm_secret_access" {
+  source = "../../modules/secret_manager_secret_iam"
+
+  secret_id = module.app_secrets.name
+  role      = "roles/secretmanager.secretAccessor"
+  member    = "serviceAccount:${module.qdrant_vm_sa.email}"
+}
+
 # Qdrant vector database server: e2-micro / Debian, running the qdrant/qdrant
-# Docker image via startup script, secured with an API key.
+# Docker image via startup script, secured with an API key fetched from Secret
+# Manager at boot (never embedded in metadata or Terraform state).
 module "qdrant_server" {
   source = "../../modules/compute_instance"
 
@@ -72,24 +94,33 @@ module "qdrant_server" {
   service_account_scopes = [
     "https://www.googleapis.com/auth/logging.write",
     "https://www.googleapis.com/auth/monitoring.write",
+    "https://www.googleapis.com/auth/cloud-platform", # required to call the Secret Manager API; IAM roles above still gate what it can actually do
   ]
 
   metadata_startup_script = <<-EOT
     #!/bin/bash
     set -euo pipefail
     apt-get update
-    apt-get install -y docker.io
+    apt-get install -y docker.io curl python3
     systemctl enable --now docker
+    ACCESS_TOKEN=$$(curl -s -H "Metadata-Flavor: Google" "http://metadata.google.internal/computeMetadata/v1/instance/service-accounts/default/token" | grep -o '"access_token":"[^"]*' | cut -d'"' -f4)
+    API_KEY=$$(curl -s -H "Authorization: Bearer $${ACCESS_TOKEN}" \
+      "https://secretmanager.googleapis.com/v1/${module.app_secrets.name}/versions/latest:access" \
+      | grep -o '"data":"[^"]*' | cut -d'"' -f4 | base64 -d | python3 -c "import json,sys; print(json.load(sys.stdin)['QDRANT_API_KEY'])")
     docker rm -f qdrant || true
     docker run -d --name qdrant --restart unless-stopped \
       -p 6333:6333 -p 6334:6334 \
-      -e QDRANT__SERVICE__API_KEY="${var.qdrant_api_key}" \
+      -e QDRANT__SERVICE__API_KEY="$${API_KEY}" \
       qdrant/qdrant
   EOT
 }
 
-# Only allow qdrant traffic from explicitly approved source ranges, not the open internet.
+# Only allow qdrant traffic from explicitly approved source ranges, not the
+# open internet. Skipped entirely when no extra ranges are configured, since
+# GCP rejects an INGRESS firewall rule with empty source_ranges - the app
+# still reaches qdrant via the separate VPC connector firewall rule below.
 module "qdrant_firewall" {
+  count  = length(var.qdrant_allowed_source_ranges) > 0 ? 1 : 0
   source = "../../modules/firewall_rule"
 
   project_id    = var.project_id
@@ -204,6 +235,15 @@ module "app_sa_docs_object_viewer" {
   member      = "serviceAccount:${module.app_sa.email}"
 }
 
+# Scoped only to the shared app secret, not project-wide.
+module "app_sa_secret_access" {
+  source = "../../modules/secret_manager_secret_iam"
+
+  secret_id = module.app_secrets.name
+  role      = "roles/secretmanager.secretAccessor"
+  member    = "serviceAccount:${module.app_sa.email}"
+}
+
 # Allow the VPC connector's reserved range to reach the qdrant server, in
 # addition to any explicitly approved external source ranges.
 module "qdrant_firewall_from_connector" {
@@ -244,39 +284,13 @@ module "app_service" {
     VECTOR_DB_TYPE        = "qdrant"
     QDRANT_HOST           = module.qdrant_server.network_interfaces[0].network_ip
     QDRANT_PORT           = "6333"
-    QDRANT_API_KEY        = var.qdrant_api_key
-    GEMINI_API_KEY        = var.gemini_api_key
     GCS_BUCKET_NAME       = module.docs_bucket.name
     MODE                  = "GCP"
   }
-}
 
-# Demo service account for the Secret Manager access-only proof of concept.
-# Not yet wired into the Cloud Run app - kept separate until explicitly connected.
-module "demo_app_sa" {
-  source = "../../modules/service_account"
-
-  project_id   = var.project_id
-  account_id   = var.demo_app_sa_id
-  display_name = "BasicRAGapp demo secret consumer (least privilege)"
-}
-
-# Secret container only - no google_secret_manager_secret_version here.
-# The secret value is populated manually via gcloud, so it never enters the
-# Terraform state file.
-module "demo_secret" {
-  source = "../../modules/secret_manager_secret"
-
-  project_id = var.project_id
-  secret_id  = var.demo_secret_id
-  labels     = local.resource_labels
-}
-
-# Grant access scoped only to this secret, not project-wide.
-module "demo_secret_access" {
-  source = "../../modules/secret_manager_secret_iam"
-
-  secret_id = module.demo_secret.name
-  role      = "roles/secretmanager.secretAccessor"
-  member    = "serviceAccount:${module.demo_app_sa.email}"
+  # Whole JSON blob resolved from Secret Manager at container start; entrypoint.sh
+  # splits it into QDRANT_API_KEY / GEMINI_API_KEY before starting gunicorn.
+  secret_env = {
+    APP_SECRETS_JSON = { secret = module.app_secrets.secret_id, version = "latest" }
+  }
 }

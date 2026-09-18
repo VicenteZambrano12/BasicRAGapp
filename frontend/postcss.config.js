@@ -2,5 +2,6 @@
   plugins: {
     tailwindcss: {},
     autoprefixer: {},
+    
   },
 }
