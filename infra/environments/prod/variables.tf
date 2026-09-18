@@ -161,24 +161,13 @@ variable "embedding_model" {
   default     = "text-embedding-004"
 }
 
-variable "demo_secret_id" {
-  description = "Secret Manager secret ID for the demo application secret; value populated manually via gcloud, never through Terraform"
+variable "app_secrets_id" {
+  description = "Secret Manager secret ID holding all runtime credentials as one JSON blob ({\"QDRANT_API_KEY\": \"...\", \"GEMINI_API_KEY\": \"...\"}); value populated manually via gcloud/config/populate_demo_secret.py, never through Terraform"
   type        = string
-  default     = "basicragapp-demo-secret"
+  default     = "basicragapp-app-secrets"
 
   validation {
-    condition     = can(regex("^[a-zA-Z0-9_-]{1,255}$", var.demo_secret_id))
-    error_message = "demo_secret_id must be 1-255 characters of letters, digits, underscores, or hyphens."
-  }
-}
-
-variable "demo_app_sa_id" {
-  description = "Account ID (short name) for the least-privilege service account granted access to the demo secret"
-  type        = string
-  default     = "basicragapp-demo-sa"
-
-  validation {
-    condition     = can(regex("^[a-z][a-z0-9-]{4,28}[a-z0-9]$", var.demo_app_sa_id))
-    error_message = "demo_app_sa_id must be a 6-30 character lowercase service account ID."
+    condition     = can(regex("^[a-zA-Z0-9_-]{1,255}$", var.app_secrets_id))
+    error_message = "app_secrets_id must be 1-255 characters of letters, digits, underscores, or hyphens."
   }
 }

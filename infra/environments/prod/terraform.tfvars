@@ -10,9 +10,9 @@ qdrant_zone = "europe-southwest1-a"
 # specific external IPs, e.g. your own machine for debugging.
 #
 # qdrant_api_key / gemini_api_key are no longer Terraform variables: their real
-# values live only in Secret Manager (basicragapp-qdrant-api-key,
-# basicragapp-gemini-api-key), populated manually via
-# config/populate_demo_secret.py or gcloud, never through Terraform/CI.
+# values live only in ONE Secret Manager secret (basicragapp-app-secrets,
+# JSON blob { "QDRANT_API_KEY": "...", "GEMINI_API_KEY": "..." }), populated
+# manually via config/populate_demo_secret.py or gcloud, never through Terraform/CI.
 
 docs_bucket_name = "basic_rag_app_docs"
 
