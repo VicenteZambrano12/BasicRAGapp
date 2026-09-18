@@ -65,12 +65,13 @@ variable "qdrant_sa_id" {
 }
 
 variable "qdrant_allowed_source_ranges" {
-  description = "CIDR ranges allowed to reach the qdrant server ports; keep as narrow as possible"
+  description = "Extra CIDR ranges (besides the Cloud Run VPC connector) allowed to reach the qdrant server ports; empty by default since the app already reaches qdrant via the VPC connector firewall rule"
   type        = list(string)
+  default     = []
 
   validation {
-    condition     = length(var.qdrant_allowed_source_ranges) > 0 && alltrue([for range in var.qdrant_allowed_source_ranges : can(cidrhost(range, 0))])
-    error_message = "qdrant_allowed_source_ranges must contain at least one valid CIDR range."
+    condition     = alltrue([for range in var.qdrant_allowed_source_ranges : can(cidrhost(range, 0))])
+    error_message = "qdrant_allowed_source_ranges must contain only valid CIDR ranges."
   }
 }
 

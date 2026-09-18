@@ -4,9 +4,10 @@ region     = "europe-southwest1"
 # Qdrant server: europe-southwest1 = Madrid region.
 qdrant_zone = "europe-southwest1-a"
 
-# qdrant_allowed_source_ranges is intentionally not set here.
-# Supply it via TF_VAR_qdrant_allowed_source_ranges
-# (CI: GitHub Actions variable QDRANT_ALLOWED_SOURCE_RANGES; local: shell env).
+# qdrant_allowed_source_ranges defaults to [] (no extra direct external access;
+# the app already reaches qdrant via the VPC connector firewall rule). Set it
+# via TF_VAR_qdrant_allowed_source_ranges only if you need direct access from
+# specific external IPs, e.g. your own machine for debugging.
 #
 # qdrant_api_key / gemini_api_key are no longer Terraform variables: their real
 # values live only in Secret Manager (basicragapp-qdrant-api-key,

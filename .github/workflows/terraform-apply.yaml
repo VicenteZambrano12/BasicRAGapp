@@ -32,8 +32,6 @@ env:
   REGION: europe-southwest1
   REPOSITORY: basicragapp
   SERVICE: basicragapp-app
-  # CIDR ranges aren't credentials, so this is a repo Variable, not a Secret.
-  TF_VAR_qdrant_allowed_source_ranges: ${{ vars.QDRANT_ALLOWED_SOURCE_RANGES }}
 
 jobs:
   build-and-deploy:

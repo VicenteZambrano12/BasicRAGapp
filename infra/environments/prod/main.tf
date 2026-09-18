@@ -121,8 +121,12 @@ module "qdrant_server" {
   EOT
 }
 
-# Only allow qdrant traffic from explicitly approved source ranges, not the open internet.
+# Only allow qdrant traffic from explicitly approved source ranges, not the
+# open internet. Skipped entirely when no extra ranges are configured, since
+# GCP rejects an INGRESS firewall rule with empty source_ranges - the app
+# still reaches qdrant via the separate VPC connector firewall rule below.
 module "qdrant_firewall" {
+  count  = length(var.qdrant_allowed_source_ranges) > 0 ? 1 : 0
   source = "../../modules/firewall_rule"
 
   project_id    = var.project_id
