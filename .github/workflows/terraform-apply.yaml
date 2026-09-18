@@ -20,7 +20,8 @@ on:
       - ".github/workflows/terraform-apply.yaml"
 
 permissions:
-  contents: read
+  contents: write # allows the workflow to push commits/branches (e.g. for automated secret-creation PRs)
+  pull-requests: write # allows the workflow to open/update PRs
   id-token: write # required for keyless GCP auth via Workload Identity Federation
 
 env:

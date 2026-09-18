@@ -250,3 +250,33 @@ module "app_service" {
     MODE                  = "GCP"
   }
 }
+
+# Demo service account for the Secret Manager access-only proof of concept.
+# Not yet wired into the Cloud Run app - kept separate until explicitly connected.
+module "demo_app_sa" {
+  source = "../../modules/service_account"
+
+  project_id   = var.project_id
+  account_id   = var.demo_app_sa_id
+  display_name = "BasicRAGapp demo secret consumer (least privilege)"
+}
+
+# Secret container only - no google_secret_manager_secret_version here.
+# The secret value is populated manually via gcloud, so it never enters the
+# Terraform state file.
+module "demo_secret" {
+  source = "../../modules/secret_manager_secret"
+
+  project_id = var.project_id
+  secret_id  = var.demo_secret_id
+  labels     = local.resource_labels
+}
+
+# Grant access scoped only to this secret, not project-wide.
+module "demo_secret_access" {
+  source = "../../modules/secret_manager_secret_iam"
+
+  secret_id = module.demo_secret.name
+  role      = "roles/secretmanager.secretAccessor"
+  member    = "serviceAccount:${module.demo_app_sa.email}"
+}

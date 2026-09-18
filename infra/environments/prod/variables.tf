@@ -180,3 +180,25 @@ variable "gemini_api_key" {
     error_message = "gemini_api_key must not be empty."
   }
 }
+
+variable "demo_secret_id" {
+  description = "Secret Manager secret ID for the demo application secret; value populated manually via gcloud, never through Terraform"
+  type        = string
+  default     = "basicragapp-demo-secret"
+
+  validation {
+    condition     = can(regex("^[a-zA-Z0-9_-]{1,255}$", var.demo_secret_id))
+    error_message = "demo_secret_id must be 1-255 characters of letters, digits, underscores, or hyphens."
+  }
+}
+
+variable "demo_app_sa_id" {
+  description = "Account ID (short name) for the least-privilege service account granted access to the demo secret"
+  type        = string
+  default     = "basicragapp-demo-sa"
+
+  validation {
+    condition     = can(regex("^[a-z][a-z0-9-]{4,28}[a-z0-9]$", var.demo_app_sa_id))
+    error_message = "demo_app_sa_id must be a 6-30 character lowercase service account ID."
+  }
+}

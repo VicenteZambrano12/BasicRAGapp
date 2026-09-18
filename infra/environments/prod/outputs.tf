@@ -28,3 +28,13 @@ output "app_images_repository" {
   value       = module.app_images.name
 }
 
+output "demo_secret_id" {
+  description = "Secret ID of the demo application secret (populate its value manually via gcloud)"
+  value       = module.demo_secret.secret_id
+}
+
+output "demo_app_service_account_email" {
+  description = "Email of the least-privilege service account granted secretAccessor on the demo secret"
+  value       = module.demo_app_sa.email
+}
+
