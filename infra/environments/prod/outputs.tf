@@ -17,3 +17,24 @@ output "qdrant_server_network_interfaces" {
   description = "Network interfaces of the qdrant-server VM instance"
   value       = module.qdrant_server.network_interfaces
 }
+
+output "app_service_url" {
+  description = "Public URL of the deployed Cloud Run application"
+  value       = module.app_service.uri
+}
+
+output "app_images_repository" {
+  description = "Fully qualified name of the Artifact Registry repository for app images"
+  value       = module.app_images.name
+}
+
+output "demo_secret_id" {
+  description = "Secret ID of the demo application secret (populate its value manually via gcloud)"
+  value       = module.demo_secret.secret_id
+}
+
+output "demo_app_service_account_email" {
+  description = "Email of the least-privilege service account granted secretAccessor on the demo secret"
+  value       = module.demo_app_sa.email
+}
+

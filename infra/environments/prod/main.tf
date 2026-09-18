@@ -142,3 +142,141 @@ module "docs_files" {
   bucket_name = module.docs_bucket.name
   files       = var.local_doc_files
 }
+
+# Docker repository for the combined frontend+backend application image.
+module "app_images" {
+  source = "../../modules/artifact_registry"
+
+  project_id         = var.project_id
+  location           = var.region
+  repository_id      = var.app_image_repository_id
+  description        = "BasicRAGapp application container images"
+  labels             = local.resource_labels
+  keep_version_count = 2
+}
+
+# Serverless VPC Access connector: lets Cloud Run reach the qdrant-server VM
+# by internal IP, without exposing qdrant to the public internet.
+module "run_vpc_connector" {
+  source = "../../modules/vpc_connector"
+
+  project_id    = var.project_id
+  name          = "run-to-vpc-connector"
+  region        = var.region
+  network       = "portfolio-demo-vpc"
+  ip_cidr_range = var.vpc_connector_cidr
+
+  depends_on = [module.vpc]
+}
+
+# Least-privilege service account for the Cloud Run application: only the
+# roles needed to read prompts/docs from GCS and call Vertex AI/Gemini.
+module "app_sa" {
+  source = "../../modules/service_account"
+
+  project_id   = var.project_id
+  account_id   = var.app_sa_id
+  display_name = "BasicRAGapp Cloud Run app (least privilege)"
+}
+
+module "app_sa_logging" {
+  source = "../../modules/project_iam_member"
+
+  project_id = var.project_id
+  role       = "roles/logging.logWriter"
+  member     = "serviceAccount:${module.app_sa.email}"
+}
+
+module "app_sa_vertex_ai" {
+  source = "../../modules/project_iam_member"
+
+  project_id = var.project_id
+  role       = "roles/aiplatform.user"
+  member     = "serviceAccount:${module.app_sa.email}"
+}
+
+# Read-only access, scoped only to the docs bucket, not project-wide storage roles.
+module "app_sa_docs_object_viewer" {
+  source = "../../modules/gcs_bucket_iam"
+
+  bucket_name = module.docs_bucket.name
+  role        = "roles/storage.objectViewer"
+  member      = "serviceAccount:${module.app_sa.email}"
+}
+
+# Allow the VPC connector's reserved range to reach the qdrant server, in
+# addition to any explicitly approved external source ranges.
+module "qdrant_firewall_from_connector" {
+  source = "../../modules/firewall_rule"
+
+  project_id    = var.project_id
+  name          = "allow-qdrant-server-from-run-connector"
+  network       = module.vpc.self_link
+  target_tags   = ["qdrant-server"]
+  source_ranges = [var.vpc_connector_cidr]
+
+  allowed = [
+    {
+      protocol = "tcp"
+      ports    = ["6333", "6334"]
+    }
+  ]
+}
+
+# Combined frontend+backend container, deployed in the same subnet/VPC as
+# the qdrant server via the Serverless VPC Access connector.
+module "app_service" {
+  source = "../../modules/cloud_run_service"
+
+  project_id             = var.project_id
+  name                   = var.cloud_run_service_name
+  location               = var.region
+  image                  = var.app_container_image
+  service_account_email  = module.app_sa.email
+  vpc_connector_id       = module.run_vpc_connector.id
+  allow_unauthenticated  = true
+
+  env = {
+    GOOGLE_CLOUD_PROJECT  = var.project_id
+    GOOGLE_CLOUD_LOCATION = var.region
+    LLM_MODEL             = var.llm_model
+    EMBEDDING_MODEL       = var.embedding_model
+    VECTOR_DB_TYPE        = "qdrant"
+    QDRANT_HOST           = module.qdrant_server.network_interfaces[0].network_ip
+    QDRANT_PORT           = "6333"
+    QDRANT_API_KEY        = var.qdrant_api_key
+    GEMINI_API_KEY        = var.gemini_api_key
+    GCS_BUCKET_NAME       = module.docs_bucket.name
+    MODE                  = "GCP"
+  }
+}
+
+# Demo service account for the Secret Manager access-only proof of concept.
+# Not yet wired into the Cloud Run app - kept separate until explicitly connected.
+module "demo_app_sa" {
+  source = "../../modules/service_account"
+
+  project_id   = var.project_id
+  account_id   = var.demo_app_sa_id
+  display_name = "BasicRAGapp demo secret consumer (least privilege)"
+}
+
+# Secret container only - no google_secret_manager_secret_version here.
+# The secret value is populated manually via gcloud, so it never enters the
+# Terraform state file.
+module "demo_secret" {
+  source = "../../modules/secret_manager_secret"
+
+  project_id = var.project_id
+  secret_id  = var.demo_secret_id
+  labels     = local.resource_labels
+}
+
+# Grant access scoped only to this secret, not project-wide.
+module "demo_secret_access" {
+  source = "../../modules/secret_manager_secret_iam"
+
+  secret_id = module.demo_secret.name
+  role      = "roles/secretmanager.secretAccessor"
+  member    = "serviceAccount:${module.demo_app_sa.email}"
+}

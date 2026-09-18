@@ -1,0 +1,16 @@
+.git
+.gitignore
+.venv
+__pycache__
+**/__pycache__
+*.pyc
+.env
+.env.sample
+config/
+content/
+frontend/node_modules
+frontend/dist
+infra/
+app_func_tests/
+build.log
+README.md
