@@ -1,7 +1,8 @@
 resource "google_cloud_run_v2_service" "backend" {
-  name     = "basicragapp-backend"
-  location = var.region
-  ingress  = "INGRESS_TRAFFIC_ALL"
+  name                = "basicragapp-backend"
+  location            = var.region
+  ingress             = "INGRESS_TRAFFIC_ALL"
+  deletion_protection = false
 
   labels = merge(var.common_labels, { component = "backend" })
 
