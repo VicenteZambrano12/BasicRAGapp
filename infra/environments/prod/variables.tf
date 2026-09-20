@@ -17,8 +17,9 @@ variable "common_labels" {
   type        = map(string)
   description = "Common labels applied to resources that support them."
   default = {
-    environment = "prod"
-    project     = "basicragapp"
-    managed_by  = "terraform"
+    app        = "basicragapp"
+    env        = "prod"
+    managed-by = "terraform"
+    project    = "portfolio"
   }
 }
