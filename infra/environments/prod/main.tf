@@ -25,6 +25,15 @@ module "secrets" {
   region        = var.region
   common_labels = var.common_labels
 }
+
+module "qdrant_vm" {
+  source        = "../../modules/qdrant_vm"
+  project_id    = var.project_id
+  region        = var.region
+  zone          = var.zone
+  subnet_id     = module.networking.qdrant_subnet_id
+  common_labels = var.common_labels
+}
 import {
   id = "projects/basicrahgapp/locations/europe-southwest1/repositories/portfolio-repo"
   to = module.artifact_registry.google_artifact_registry_repository.default
