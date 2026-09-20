@@ -4,6 +4,12 @@ module "artifact_registry" {
   location      = "europe-southwest1"
   repository_id = "portfolio-repo"
 }
+module "networking" {
+  source     = "../../modules/networking"
+  project_id = var.project_id
+  region     = var.region
+  vpc_name   = "portfolio-demo-vpc"
+}
 
 import {
   id = "projects/basicrahgapp/locations/europe-southwest1/repositories/portfolio-repo"
