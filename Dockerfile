@@ -1,7 +1,7 @@
 # Single-image build: React/Vite frontend + FastAPI backend, served from one container.
 
 # ---- Stage 1: build the frontend static assets ----
-FROM node:20-alpine AS frontend-build
+FROM node:24-alpine AS frontend-build
 WORKDIR /app/frontend
 COPY frontend/package.json frontend/package-lock.json* ./
 RUN npm ci
