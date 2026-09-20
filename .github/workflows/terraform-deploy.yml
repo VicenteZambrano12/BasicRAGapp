@@ -1,0 +1,111 @@
+name: Deploy GCP Infrastructure (Terraform)
+
+on:
+  pull_request:
+    types: [closed]
+    branches: [main]
+
+env:
+  PROJECT_ID: ${{ vars.GCP_PROJECT_ID }}
+  REGION: ${{ vars.GCP_REGION }}
+  AR_REPOSITORY: ${{ vars.GCP_AR_REPOSITORY }}
+  IMAGE_NAME: basicragapp
+  TF_WORKING_DIR: infra/environments/prod
+
+jobs:
+  build-and-plan:
+    # Only run for PRs from 'dev' that were actually merged into 'main'.
+    if: github.event.pull_request.merged == true && github.head_ref == 'dev'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    outputs:
+      image: ${{ steps.image.outputs.image }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Authenticate to GCP (Workload Identity Federation)
+        id: auth
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ secrets.GCP_TERRAFORM_SERVICE_ACCOUNT }}
+
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Configure Docker for Artifact Registry
+        run: gcloud auth configure-docker ${{ env.REGION }}-docker.pkg.dev --quiet
+
+      - name: Set image tag
+        id: image
+        run: |
+          IMAGE="${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.AR_REPOSITORY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}"
+          echo "image=$IMAGE" >> "$GITHUB_OUTPUT"
+
+      - name: Build Docker image
+        run: docker build -t ${{ steps.image.outputs.image }} .
+
+      - name: Push Docker image
+        run: docker push ${{ steps.image.outputs.image }}
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+
+      - name: Terraform Init
+        working-directory: ${{ env.TF_WORKING_DIR }}
+        run: terraform init
+
+      - name: Terraform Plan
+        working-directory: ${{ env.TF_WORKING_DIR }}
+        # Uncomment the TF_VAR line below if Terraform is injecting your Secret Manager JSON payload
+        # env:
+        #   TF_VAR_app_secrets_json: ${{ secrets.APP_SECRETS_JSON }}
+        run: terraform plan -out=tfplan -var="app_container_image=${{ steps.image.outputs.image }}"
+        
+      - name: Show Terraform Plan
+        working-directory: ${{ env.TF_WORKING_DIR }}
+        run: terraform show tfplan
+
+      - name: Upload plan artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: tfplan
+          path: ${{ env.TF_WORKING_DIR }}/tfplan
+          retention-days: 1
+
+  apply:
+    needs: build-and-plan
+    runs-on: ubuntu-latest
+    environment: production
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Authenticate to GCP (Workload Identity Federation)
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ secrets.GCP_TERRAFORM_SERVICE_ACCOUNT }}
+
+      - name: Download plan artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: tfplan
+          path: ${{ env.TF_WORKING_DIR }}
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+
+      - name: Terraform Init
+        working-directory: ${{ env.TF_WORKING_DIR }}
+        run: terraform init
+
+      - name: Terraform Apply
+        working-directory: ${{ env.TF_WORKING_DIR }}
+        run: terraform apply tfplan
