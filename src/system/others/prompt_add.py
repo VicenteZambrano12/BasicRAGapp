@@ -1,4 +1,7 @@
+import logging
 import os
+
+logger = logging.getLogger(__name__)
 
 # Define the directory
 target_directory = "C:\\Users\\Vza 12\\Documents\\PAUHelper\\PAUHelper\\src\\prompts"
@@ -14,9 +17,9 @@ NUNCA digas que no puedes ver, analizar o responder a imágenes.
 
 # Check if the directory exists
 if not os.path.isdir(target_directory):
-    print(f"Error: Directory '{target_directory}' not found.")
+    logger.error(f"Directory '{target_directory}' not found.")
 else:
-    print(f"Processing files in '{target_directory}'...")
+    logger.info(f"Processing files in '{target_directory}'...")
     
     for root, dirs, files in os.walk(target_directory):
         for file in files:
@@ -41,9 +44,9 @@ else:
                     with open(file_path, 'w', encoding='utf-8') as f:
                         f.writelines(lines)
                         
-                    print(f"Updated: {file_path}")
+                    logger.info(f"Updated: {file_path}")
 
                 except Exception as e:
-                    print(f"Failed to update {file_path}: {e}")
+                    logger.error(f"Failed to update {file_path}: {e}", exc_info=True)
 
-    print("Insertion process completed.")
+    logger.info("Insertion process completed.")
