@@ -8,6 +8,11 @@ variable "region" {
   description = "The GCP region to deploy resources into."
 }
 
+variable "app_container_image" {
+  type        = string
+  description = "The Docker image URL to deploy"
+}
+
 variable "common_labels" {
   type        = map(string)
   description = "Common labels applied to resources that support them."
