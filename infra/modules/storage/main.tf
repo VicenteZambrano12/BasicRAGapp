@@ -3,5 +3,5 @@ resource "google_storage_bucket" "app_data" {
   location                    = var.region
   uniform_bucket_level_access = true
   force_destroy               = true
-  labels                      = var.common_labels
+  labels                      = merge(var.common_labels, { component = "storage" })
 }

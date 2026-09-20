@@ -22,11 +22,24 @@ jobs:
     permissions:
       contents: read
       id-token: write
+      pull-requests: read # Added so dorny/paths-filter can read the PR diff API
     outputs:
       image: ${{ steps.image.outputs.image }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      # 1. NEW: Check if backend or frontend directories changed in this PR
+      - name: Check for source changes
+        uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            app:
+              - 'frontend/**'
+              - 'src/**'
+              - 'vector_db/**'
+              - 'prompts/**'
 
       - name: Authenticate to GCP (Workload Identity Federation)
         id: auth
@@ -41,16 +54,37 @@ jobs:
       - name: Configure Docker for Artifact Registry
         run: gcloud auth configure-docker ${{ env.REGION }}-docker.pkg.dev --quiet
 
-      - name: Set image tag
+      # 2. MODIFIED: Set the image tag conditionally based on the filter output
+      - name: Set image tag and build flag
         id: image
         run: |
-          IMAGE="${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.AR_REPOSITORY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}"
-          echo "image=$IMAGE" >> "$GITHUB_OUTPUT"
+          BASE_IMAGE="${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.AR_REPOSITORY }}/${{ env.IMAGE_NAME }}"
+          
+          if [ "${{ steps.filter.outputs.app }}" == "true" ]; then
+            echo "Source changed. Will build and push a new image."
+            echo "image=${BASE_IMAGE}:${{ github.sha }}" >> "$GITHUB_OUTPUT"
+            echo "build=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "No source changes detected. Skipping build and fetching the latest image from GCP..."
+            
+            # Fetch the digest of the most recently updated image in Artifact Registry
+            LATEST_DIGEST=$(gcloud artifacts docker images list $BASE_IMAGE \
+              --sort-by="~UPDATE_TIME" \
+              --limit=1 \
+              --format="value(version)")
+            
+            # Pass the existing digest to Terraform so the state remains intact
+            echo "image=${BASE_IMAGE}@${LATEST_DIGEST}" >> "$GITHUB_OUTPUT"
+            echo "build=false" >> "$GITHUB_OUTPUT"
+          fi
 
+      # 3. MODIFIED: Only execute Docker build/push if 'build' was evaluated to true
       - name: Build Docker image
+        if: steps.image.outputs.build == 'true'
         run: docker build -t ${{ steps.image.outputs.image }} .
 
       - name: Push Docker image
+        if: steps.image.outputs.build == 'true'
         run: docker push ${{ steps.image.outputs.image }}
 
       - name: Setup Terraform
@@ -62,9 +96,6 @@ jobs:
 
       - name: Terraform Plan
         working-directory: ${{ env.TF_WORKING_DIR }}
-        # Uncomment the TF_VAR line below if Terraform is injecting your Secret Manager JSON payload
-        # env:
-        #   TF_VAR_app_secrets_json: ${{ secrets.APP_SECRETS_JSON }}
         run: terraform plan -out=tfplan -var="app_container_image=${{ steps.image.outputs.image }}"
         
       - name: Show Terraform Plan
