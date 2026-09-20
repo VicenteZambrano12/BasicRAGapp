@@ -1,20 +1,22 @@
-﻿import React, { useEffect, useState } from 'react';
-import { createHowItWorksPdfUrl } from '../utils/howItWorksPdf';
+﻿import React, { useState } from 'react';
+
+/** Maps a study language tag to its localized How It Works PDF, served from public/docs. */
+const HOW_IT_WORKS_PDF_BY_LANGUAGE = {
+  ES: '/docs/how-it-works-es.pdf',
+  EN: '/docs/how-it-works-en.pdf',
+};
 
 /**
  * Renders the application shell and the How It Works PDF dialog.
  *
- * @param {{ children: React.ReactNode, translations: Record<string, string> }} props
+ * @param {{ children: React.ReactNode, translations: Record<string, string>, language: string }} props
  * @returns {React.ReactElement}
  */
-export const AppLayout = ({ children, translations }) => {
-  const [pdfUrl, setPdfUrl] = useState(null);
+export const AppLayout = ({ children, translations, language }) => {
+  const [isPdfOpen, setIsPdfOpen] = useState(false);
 
-  useEffect(() => () => {
-    if (pdfUrl) URL.revokeObjectURL(pdfUrl);
-  }, [pdfUrl]);
-
-  const closePdf = () => setPdfUrl(null);
+  const pdfUrl = HOW_IT_WORKS_PDF_BY_LANGUAGE[language] || HOW_IT_WORKS_PDF_BY_LANGUAGE.ES;
+  const closePdf = () => setIsPdfOpen(false);
 
   return (
     <div className="min-h-screen lg:h-screen lg:overflow-hidden bg-[#F0F2F5] flex flex-col items-center p-4 md:p-8">
@@ -29,7 +31,7 @@ export const AppLayout = ({ children, translations }) => {
           </span>
           <button
             type="button"
-            onClick={() => setPdfUrl(createHowItWorksPdfUrl(translations))}
+            onClick={() => setIsPdfOpen(true)}
             className="ml-auto inline-flex items-center gap-2 rounded-lg border border-[#1E3A8A] px-3 py-2 text-sm font-semibold text-[#1E3A8A] transition-colors hover:bg-blue-50 focus:outline-none focus:ring-2 focus:ring-blue-300"
             title={translations.howItWorks}
           >
@@ -43,7 +45,7 @@ export const AppLayout = ({ children, translations }) => {
         </main>
       </div>
 
-      {pdfUrl && (
+      {isPdfOpen && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 p-4 backdrop-blur-sm"
           role="dialog"
