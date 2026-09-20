@@ -6,12 +6,12 @@ module "artifact_registry" {
   common_labels = var.common_labels
 }
 module "networking" {
-  source                 = "../../modules/networking"
-  project_id             = var.project_id
-  region                 = var.region
-  vpc_name               = "portfolio-demo-vpc"
-  serverless_subnet_cidr = "10.0.2.0/24"
-  common_labels          = var.common_labels
+  source        = "../../modules/networking"
+  project_id    = var.project_id
+  region        = var.region
+  vpc_name      = "portfolio-demo-vpc"
+  # serverless_subnet_cidr = "10.0.2.0/24"
+  common_labels = var.common_labels
 }
 module "storage" {
   source        = "../../modules/storage"
