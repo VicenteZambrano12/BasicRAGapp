@@ -52,9 +52,9 @@ resource "google_compute_firewall" "allow_ssh_iap" {
   target_tags   = ["qdrant-vm"]
 
   allow {
-    protocol = "tcp"
-    ports    = ["22"]
-  }
+  protocol = "tcp"
+  ports    = ["22", "6333"]
+}
 }
 
 resource "google_compute_firewall" "allow_cloud_run_to_qdrant" {
