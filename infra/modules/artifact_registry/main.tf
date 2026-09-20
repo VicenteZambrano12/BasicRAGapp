@@ -5,6 +5,7 @@ resource "google_artifact_registry_repository" "default" {
   format                 = "DOCKER"
   description            = "Repositorio Docker principal gestionado por Terraform"
   cleanup_policy_dry_run = false
+  labels                 = var.common_labels
 
   cleanup_policies {
     id     = "keep-last-2-basicragapp"
