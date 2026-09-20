@@ -20,3 +20,7 @@ variable "serverless_subnet_cidr" {
   type    = string
   default = "10.0.2.0/28"
 }
+
+variable "common_labels" {
+  type = map(string)
+}
