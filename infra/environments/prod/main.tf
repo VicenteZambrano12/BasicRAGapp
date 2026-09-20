@@ -34,6 +34,15 @@ module "qdrant_vm" {
   subnet_id     = module.networking.qdrant_subnet_id
   common_labels = var.common_labels
 }
+
+module "cloudrun" {
+  source               = "../../modules/cloudrun"
+  project_id           = var.project_id
+  region               = var.region
+  serverless_subnet_id = module.networking.serverless_subnet_id
+  qdrant_internal_ip   = module.qdrant_vm.qdrant_internal_ip
+  common_labels        = var.common_labels
+}
 import {
   id = "projects/basicrahgapp/locations/europe-southwest1/repositories/portfolio-repo"
   to = module.artifact_registry.google_artifact_registry_repository.default
