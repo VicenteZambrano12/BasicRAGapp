@@ -32,6 +32,12 @@ resource "google_cloud_run_v2_service" "backend" {
         value = var.region
       }
 
+      # I/O-bound app; cap worker count so N processes don't each duplicate the ML/genai import footprint.
+      env {
+        name  = "MAX_WORKERS"
+        value = "2"
+      }
+
       env {
         name = "APP_SECRETS_JSON"
         value_source {
@@ -39,6 +45,14 @@ resource "google_cloud_run_v2_service" "backend" {
             secret  = var.secret_id
             version = "latest"
           }
+        }
+      }
+
+      # Default 512Mi was getting OOM-killed by the ML/genai import stack across gunicorn workers.
+      resources {
+        limits = {
+          cpu    = "2"
+          memory = "2Gi"
         }
       }
     }
