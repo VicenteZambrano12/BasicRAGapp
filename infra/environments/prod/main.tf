@@ -1,3 +1,8 @@
+locals {
+  # Pre-existing Cloud Run runtime SA, created manually in the console (not Terraform-managed).
+  cloud_run_service_account_email = "basicragapp-app@basicrahgapp.iam.gserviceaccount.com"
+}
+
 module "artifact_registry" {
   source        = "../../modules/artifact_registry"
   project_id    = "basicrahgapp"
@@ -21,10 +26,11 @@ module "storage" {
 }
 
 module "secrets" {
-  source        = "../../modules/secrets"
-  project_id    = var.project_id
-  region        = var.region
-  common_labels = var.common_labels
+  source                          = "../../modules/secrets"
+  project_id                      = var.project_id
+  region                          = var.region
+  cloud_run_service_account_email = local.cloud_run_service_account_email
+  common_labels                   = var.common_labels
 }
 
 module "qdrant_vm" {
@@ -37,12 +43,15 @@ module "qdrant_vm" {
 }
 
 module "cloudrun" {
-  source               = "../../modules/cloudrun"
-  project_id           = var.project_id
-  region               = var.region
-  serverless_subnet_id = module.networking.serverless_subnet_id
-  qdrant_internal_ip   = module.qdrant_vm.qdrant_internal_ip
-  common_labels        = var.common_labels
+  source                = "../../modules/cloudrun"
+  project_id            = var.project_id
+  region                = var.region
+  serverless_subnet_id  = module.networking.serverless_subnet_id
+  qdrant_internal_ip    = module.qdrant_vm.qdrant_internal_ip
+  app_container_image   = var.app_container_image
+  service_account_email = local.cloud_run_service_account_email
+  secret_id             = module.secrets.secret_id
+  common_labels         = var.common_labels
 }
 import {
   id = "projects/basicrahgapp/locations/europe-southwest1/repositories/portfolio-repo"
