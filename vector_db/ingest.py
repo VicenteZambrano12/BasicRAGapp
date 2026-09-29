@@ -27,6 +27,10 @@ load_dotenv(override=True)
 from src.config.config_loader import config
 from vector_db.manager import get_vector_store
 
+# All ingested source files live under this folder in the GCS bucket, mirroring
+# the local content/<subject>/... structure (e.g. gs://<bucket>/docs/biology/foo.pdf).
+GCS_DOCS_PREFIX = "docs"
+
 class ModernGeminiEmbeddings(Embeddings):
     """
     A custom LangChain Embeddings wrapper that automatically detects 
@@ -133,8 +137,11 @@ def create_vector_db(path: str, bucket: "storage.Bucket", content_root: str, use
     folder, subject = extract_folder_and_subject(path)
 
     relative_path = Path(path).resolve().relative_to(Path(content_root).resolve()).as_posix()
-    print(f"Uploading source file to GCS: {relative_path}")
-    gcs_location = upload_to_gcs(bucket, path, relative_path)
+    # relative_path (unprefixed) stays the stable doc_id/chunk_id key in Qdrant;
+    # only the physical GCS object lives under the docs/ folder.
+    gcs_object_name = f"{GCS_DOCS_PREFIX}/{relative_path}"
+    print(f"Uploading source file to GCS: {gcs_object_name}")
+    gcs_location = upload_to_gcs(bucket, path, gcs_object_name)
     print(f"✓ GCS object ready: {gcs_location['gcs_uri']} (generation {gcs_location['gcs_generation']})")
 
     print(f"\nLoading Gemini embeddings model for {subject}...")
