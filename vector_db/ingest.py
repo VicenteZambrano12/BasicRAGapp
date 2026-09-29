@@ -2,6 +2,7 @@ import hashlib
 import mimetypes
 import os
 import re
+import sys
 import uuid
 from datetime import datetime, timezone
 from pathlib import Path
@@ -13,6 +14,11 @@ from google.cloud.exceptions import NotFound
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_community.document_loaders import PyPDFLoader
 from langchain_core.embeddings import Embeddings
+
+# Windows terminals default to cp1252, which can't encode the emoji used in prints below.
+if sys.stdout.encoding and sys.stdout.encoding.lower() != "utf-8":
+    sys.stdout.reconfigure(encoding="utf-8")
+    sys.stderr.reconfigure(encoding="utf-8")
 from tenacity import retry, stop_after_attempt, wait_exponential
 
 load_dotenv(override=True)

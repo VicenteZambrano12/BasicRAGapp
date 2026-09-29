@@ -45,6 +45,9 @@ def get_qdrant_client(timeout: Optional[float] = None) -> QdrantClient:
         host=qdrant_host,
         port=qdrant_port,
         api_key=qdrant_api_key if qdrant_api_key else None,
+        # Without this, QdrantClient defaults to https whenever an api_key is set (see qdrant_remote.py),
+        # which breaks the plain-HTTP qdrant container reached via localhost/internal IP.
+        https=False,
         timeout=timeout,
     )
 
