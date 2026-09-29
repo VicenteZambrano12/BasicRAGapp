@@ -13,6 +13,7 @@ class Config:
     def __init__(self):
         # Try to load .env file from root
         env_path = Path(__file__).resolve().parents[2] / ".env"  # two levels up from src/config
+        self._root = env_path.parent
 
         if env_path.exists():
             # Local development: use .env
@@ -29,26 +30,34 @@ class Config:
             value = self._config(key, default=None) if self._config else os.environ.get(key)
             if value:
                 if key == "GOOGLE_APPLICATION_CREDENTIALS":
-                    credential_path = Path(value.replace("\\", os.sep))
-                    if not credential_path.is_absolute():
-                        credential_path = env_path.parent / credential_path
-                    value = str(credential_path)
+                    value = self._resolve_credentials_path(value)
                 os.environ.setdefault(key, str(value))
+
+    def _resolve_credentials_path(self, value: str) -> str:
+        """Anchor a relative GOOGLE_APPLICATION_CREDENTIALS path to the project root, independent of cwd."""
+        credential_path = Path(str(value).replace("\\", os.sep))
+        if not credential_path.is_absolute():
+            credential_path = self._root / credential_path
+        return str(credential_path)
 
     def __call__(self, key: str, default=None):
         # Try Decouple first
         if self._config:
             try:
-                return self._config(key)
+                value = self._config(key)
             except Exception:
                 value = os.environ.get(key, default)
-                if value is not None:
-                    return value
-                raise RuntimeError(f"Environment variable '{key}' not set in .env or environment")
-        # Fallback to os.environ
-        value = os.environ.get(key, default)
-        if value is None:
-            raise RuntimeError(f"Environment variable '{key}' not set")
+                if value is None:
+                    raise RuntimeError(f"Environment variable '{key}' not set in .env or environment")
+        else:
+            # Fallback to os.environ
+            value = os.environ.get(key, default)
+            if value is None:
+                raise RuntimeError(f"Environment variable '{key}' not set")
+
+        if key == "GOOGLE_APPLICATION_CREDENTIALS" and value:
+            value = self._resolve_credentials_path(value)
+
         return value
 
 # Instantiate a global config object
