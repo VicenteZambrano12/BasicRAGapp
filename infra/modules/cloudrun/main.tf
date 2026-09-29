@@ -7,8 +7,10 @@ resource "google_cloud_run_v2_service" "backend" {
   labels = merge(var.common_labels, { component = "backend" })
 
   template {
+    service_account = var.service_account_email
+
     containers {
-      image = "us-docker.pkg.dev/cloudrun/container/hello"
+      image = var.app_container_image
 
       env {
         name  = "QDRANT_HOST"
@@ -18,6 +20,26 @@ resource "google_cloud_run_v2_service" "backend" {
       env {
         name  = "QDRANT_PORT"
         value = "6333"
+      }
+
+      env {
+        name  = "GOOGLE_CLOUD_PROJECT"
+        value = var.project_id
+      }
+
+      env {
+        name  = "GOOGLE_CLOUD_LOCATION"
+        value = var.region
+      }
+
+      env {
+        name = "APP_SECRETS_JSON"
+        value_source {
+          secret_key_ref {
+            secret  = var.secret_id
+            version = "latest"
+          }
+        }
       }
     }
 
