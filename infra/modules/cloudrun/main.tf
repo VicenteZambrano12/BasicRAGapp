@@ -9,6 +9,14 @@ resource "google_cloud_run_v2_service" "backend" {
   template {
     service_account = var.service_account_email
 
+    # No Redis is wired up, so session state lives in fakeredis: an in-memory
+    # cache local to a single process. Pin to exactly one instance so every
+    # request is served by the same process and the cache is actually shared.
+    scaling {
+      min_instance_count = 1
+      max_instance_count = 1
+    }
+
     containers {
       image = var.app_container_image
 
@@ -32,10 +40,11 @@ resource "google_cloud_run_v2_service" "backend" {
         value = var.region
       }
 
-      # I/O-bound app; cap worker count so N processes don't each duplicate the ML/genai import footprint.
+      # Single worker so fakeredis's in-memory cache (no real Redis configured) is
+      # shared by every request instead of being split across sibling processes.
       env {
         name  = "MAX_WORKERS"
-        value = "2"
+        value = "1"
       }
 
       env {
