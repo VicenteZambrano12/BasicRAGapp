@@ -1,10 +1,9 @@
 ﻿import React, { useState } from 'react';
 
-/** Maps a study language tag to its localized How It Works PDF, served from public/docs. */
-const HOW_IT_WORKS_PDF_BY_LANGUAGE = {
-  ES: '/docs/how-it-works-es.pdf',
-  EN: '/docs/how-it-works-en.pdf',
-};
+const API_URL = (import.meta.env.VITE_API_URL || '/api').replace(/\/$/, '');
+
+/** Builds the API URL for the localized How It Works PDF, served from the GCS "documents" bucket. */
+const getHowItWorksPdfUrl = (language) => `${API_URL}/docs/how-it-works?language=${language === 'EN' ? 'EN' : 'ES'}`;
 
 /**
  * Renders the application shell and the How It Works PDF dialog.
@@ -15,7 +14,7 @@ const HOW_IT_WORKS_PDF_BY_LANGUAGE = {
 export const AppLayout = ({ children, translations, language }) => {
   const [isPdfOpen, setIsPdfOpen] = useState(false);
 
-  const pdfUrl = HOW_IT_WORKS_PDF_BY_LANGUAGE[language] || HOW_IT_WORKS_PDF_BY_LANGUAGE.ES;
+  const pdfUrl = getHowItWorksPdfUrl(language);
   const closePdf = () => setIsPdfOpen(false);
 
   return (
