@@ -14,6 +14,7 @@ from fastapi.staticfiles import StaticFiles
 from src.api.Endpoint.chat_endpoint import router as chat_router
 from src.api.Endpoint.config_endpoint import router as config_router
 from src.api.Endpoint.create_system_endpoint import router as create_system_router
+from src.api.Endpoint.docs_endpoint import router as docs_router
 from src.api.Endpoint.home_endpoint import router as home_router
 from src.api.middleware.logging_middleware import RequestLoggingMiddleware
 from src.utils.cache import graph_config_cache, graph_instance_cache
@@ -124,6 +125,7 @@ app.include_router(home_router, prefix="/api")
 app.include_router(config_router, prefix="/api")
 app.include_router(create_system_router, prefix="/api")
 app.include_router(chat_router, prefix="/api")
+app.include_router(docs_router, prefix="/api")
 
 # Serve the built frontend (single-container deployment) when present; local
 # API-only dev (no frontend_dist) simply skips this block.
