@@ -51,8 +51,17 @@ def build_sources(documents: list) -> List[SourceDoc]:
 
         try:
             url = _sign_url(bucket_name, object_name)
-        except Exception as exc:
-            logger.warning(f"[SOURCES] Failed to sign URL for '{doc_id}': {exc}")
+        except Exception:
+            logger.warning(
+                "Failed to sign source document URL, omitting from response",
+                exc_info=True,
+                extra={
+                    "event": "source_signing_failed",
+                    "doc_id": doc_id,
+                    "bucket_name": bucket_name,
+                    "object_name": object_name,
+                },
+            )
             continue
 
         sources.append(

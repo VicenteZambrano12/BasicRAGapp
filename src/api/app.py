@@ -34,31 +34,42 @@ logger = logging.getLogger(__name__)
 async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     """Load runtime resources on startup and clear volatile caches on shutdown."""
 
-    logger.info("[STARTUP] ========== INITIALIZING APPLICATION ==========")
+    logger.info("Application startup initiated", extra={"event": "startup_started"})
 
-    logger.info("[STARTUP] Loading embeddings model...")
     try:
         get_embeddings()
-        logger.info("[STARTUP] Embeddings model loaded successfully")
-    except Exception as exc:
-        logger.error(f"[STARTUP] Failed to load embeddings model: {exc}", exc_info=True)
+        logger.info("Embeddings model loaded", extra={"event": "embeddings_loaded"})
+    except Exception:
+        logger.error(
+            "Failed to load embeddings model",
+            exc_info=True,
+            extra={"event": "embeddings_load_failed"},
+        )
 
-    logger.info("[STARTUP] Testing Qdrant connection...")
     try:
         test_client = get_qdrant_client(timeout=5)
         collections = test_client.get_collections()
         logger.info(
-            f"[STARTUP] Qdrant connected successfully ({len(collections.collections)} collections)"
+            "Qdrant connection established",
+            extra={
+                "event": "qdrant_connected",
+                "collection_count": len(collections.collections),
+            },
         )
-    except Exception as exc:
-        logger.error(f"[STARTUP] Failed to connect to Qdrant: {exc}", exc_info=True)
+    except Exception:
+        logger.error(
+            "Failed to connect to Qdrant",
+            exc_info=True,
+            extra={"event": "qdrant_connection_failed"},
+        )
 
-    logger.info("[STARTUP] ========== APPLICATION READY ==========")
+    logger.info("Application ready", extra={"event": "startup_completed"})
     yield
 
-    logger.info("[SHUTDOWN] Cleaning up resources...")
+    logger.info("Application shutdown initiated", extra={"event": "shutdown_started"})
     graph_instance_cache.clear()
     graph_config_cache.clear()
+    logger.info("Application shutdown complete", extra={"event": "shutdown_completed"})
 
 
 app = FastAPI(

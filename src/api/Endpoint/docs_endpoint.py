@@ -51,7 +51,16 @@ async def get_how_it_works_pdf(language: Literal["ES", "EN"] = "ES") -> Redirect
         bucket = _get_storage_client().bucket(bucket_name)
         url = sign_gcs_url(bucket, object_name, SIGNED_URL_EXPIRY)
     except Exception as exc:
-        logger.error(f"[DOCS] Failed to sign URL for '{object_name}': {exc}", exc_info=True)
+        logger.error(
+            "Failed to sign document URL",
+            exc_info=True,
+            extra={
+                "event": "document_signing_failed",
+                "object_name": object_name,
+                "bucket_name": bucket_name,
+                "language": language,
+            },
+        )
         raise HTTPException(status_code=502, detail="Unable to retrieve the requested document.") from exc
 
     return RedirectResponse(url=url, status_code=307)

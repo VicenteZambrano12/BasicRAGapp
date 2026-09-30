@@ -23,18 +23,29 @@ def execute_create_system(data: CreateSystemRequest) -> Dict[str, str]:
     subject = data.subject
     cache_key = build_cache_key(session_id, category, subject)
 
-    logger.info(f"[CREATE_SYSTEM] ========== Request for: {cache_key} ==========")
+    log_context = {"session_id": session_id, "category": category, "subject": subject}
 
     cached_config = load_graph_config_from_cache(cache_key)
 
     if not cached_config:
-        logger.info(f"[CREATE_SYSTEM] Creating new system for {category}-{subject}")
+        logger.info(
+            "Initializing new system",
+            extra={"event": "create_system_started", **log_context},
+        )
         try:
             initialize_and_cache_graph(cache_key, category, subject)
         except Exception as exc:
-            logger.error(f"[CREATE_SYSTEM] Error: {exc}")
+            logger.error(
+                "Failed to initialize system",
+                exc_info=True,
+                extra={"event": "create_system_failed", **log_context},
+            )
             raise HTTPException(status_code=500, detail=str(exc))
     else:
+        logger.debug(
+            "Reusing cached system",
+            extra={"event": "create_system_cache_hit", **log_context},
+        )
         ensure_cached_graph(cache_key, category, subject)
 
     return build_create_system_response(subject, data.language)

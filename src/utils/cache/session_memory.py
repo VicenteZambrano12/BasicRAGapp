@@ -14,8 +14,12 @@ def get_str_field_from_cache(cache_key: str) -> Optional[str]:
     """Return the raw conversation-memory JSON string for a session, if any."""
     try:
         return redis_client.get(f"memory:{cache_key}")
-    except Exception as exc:
-        logger.warning(f"[CACHE] Failed to load memory from cache backend: {exc}")
+    except Exception:
+        logger.warning(
+            "Failed to load conversation memory from cache backend",
+            exc_info=True,
+            extra={"event": "cache_read_failed", "cache_namespace": "memory"},
+        )
         return None
 
 
@@ -23,5 +27,9 @@ def set_str_field_to_cache(cache_key: str, value: str) -> None:
     """Persist the raw conversation-memory JSON string for a session."""
     try:
         redis_client.setex(f"memory:{cache_key}", MEMORY_TTL_SECONDS, value)
-    except Exception as exc:
-        logger.warning(f"[CACHE] Failed to persist memory to cache backend: {exc}")
+    except Exception:
+        logger.warning(
+            "Failed to persist conversation memory to cache backend",
+            exc_info=True,
+            extra={"event": "cache_write_failed", "cache_namespace": "memory"},
+        )

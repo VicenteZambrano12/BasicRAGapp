@@ -32,7 +32,16 @@ def execute_chat(data: ChatRequest) -> Dict[str, Any]:
     cache_key = build_cache_key(session_id, category, subject)
     token_counter = get_token_counter()
 
-    logger.info(f"[CHAT] ========== Request for: {cache_key} ==========")
+    logger.info(
+        "Chat turn started",
+        extra={
+            "event": "chat_started",
+            "session_id": session_id,
+            "category": category,
+            "subject": subject,
+            "has_image": bool(data.image and data.image_type),
+        },
+    )
 
     graph = ensure_graph_available(cache_key, category, subject)
 
@@ -46,15 +55,21 @@ def execute_chat(data: ChatRequest) -> Dict[str, Any]:
             )
 
             try:
-                logger.info("[CHAT] Extracting image description...")
                 img_desc = image_read(image_url)
                 if data.query:
                     intermediate_memory = f"Image: {img_desc[:150]}\nQ: {data.query[:100]}"
                 else:
                     intermediate_memory = f"Image: {img_desc[:150]}"
-                logger.info("[CHAT] Image description extracted")
-            except Exception as exc:
-                logger.warning(f"[CHAT] image_read() failed: {exc}")
+                logger.info(
+                    "Image description extracted",
+                    extra={"event": "image_description_extracted", "session_id": session_id},
+                )
+            except Exception:
+                logger.warning(
+                    "Image description extraction failed, falling back to placeholder",
+                    exc_info=True,
+                    extra={"event": "image_description_failed", "session_id": session_id},
+                )
                 if data.query:
                     intermediate_memory = f"Image: [processed]\nQ: {data.query[:100]}"
                 else:
@@ -63,7 +78,15 @@ def execute_chat(data: ChatRequest) -> Dict[str, Any]:
         except HTTPException:
             raise
         except Exception as exc:
-            logger.error(f"[CHAT] Failed to process image: {exc}")
+            logger.error(
+                "Failed to process uploaded image",
+                exc_info=True,
+                extra={
+                    "event": "image_processing_failed",
+                    "session_id": session_id,
+                    "image_type": data.image_type,
+                },
+            )
             raise HTTPException(status_code=400, detail=f"Failed to process image: {exc}")
 
     if not message_content:
@@ -83,7 +106,14 @@ def execute_chat(data: ChatRequest) -> Dict[str, Any]:
     )
 
     initial_counts = token_counter.count_messages(chat_state["messages"])
-    logger.info(f"[TOKEN COUNT] Initial input: {initial_counts['total']} tokens")
+    logger.debug(
+        "Chat input token count",
+        extra={
+            "event": "input_tokens_counted",
+            "input_tokens": initial_counts["total"],
+            "session_id": session_id,
+        },
+    )
 
     try:
         response_text, total_steps, retrieved_documents = run_graph_stream(graph, chat_state)
@@ -109,5 +139,14 @@ def execute_chat(data: ChatRequest) -> Dict[str, Any]:
     except HTTPException:
         raise
     except Exception as exc:
-        logger.error(f"[CHAT] Error: {exc}", exc_info=True)
+        logger.error(
+            "Chat turn failed",
+            exc_info=True,
+            extra={
+                "event": "chat_failed",
+                "session_id": session_id,
+                "category": category,
+                "subject": subject,
+            },
+        )
         raise HTTPException(status_code=500, detail=f"Chat error: {exc}")

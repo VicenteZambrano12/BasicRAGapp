@@ -50,9 +50,28 @@ def load_system_prompt(subject: str, community: str, collection: str) -> str:
         blob = _get_storage_client().bucket(bucket_name).blob(object_name)
         return blob.download_as_text(encoding="utf-8")
     except NotFound:
-        logger.warning(f"[CREATE_SYSTEM] Prompt object not found: gs://{bucket_name}/{object_name}; using a generic prompt")
-    except Exception as exc:
-        logger.error(f"[CREATE_SYSTEM] Failed to load prompt 'gs://{bucket_name}/{object_name}': {exc}", exc_info=True)
+        logger.warning(
+            "Prompt object not found in GCS, using a generic prompt",
+            extra={
+                "event": "prompt_not_found",
+                "bucket_name": bucket_name,
+                "object_name": object_name,
+                "subject": subject,
+                "community": community,
+            },
+        )
+    except Exception:
+        logger.error(
+            "Failed to load prompt from GCS, using a generic prompt",
+            exc_info=True,
+            extra={
+                "event": "prompt_load_failed",
+                "bucket_name": bucket_name,
+                "object_name": object_name,
+                "subject": subject,
+                "community": community,
+            },
+        )
 
     return (
         f"Eres un tutor experto en {subject} para el examen PAU en {community}. "

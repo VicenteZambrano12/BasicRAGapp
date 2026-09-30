@@ -19,7 +19,10 @@ def build_image_url(image_data: str, image_type: str) -> str:
             if mime_part.startswith("image/"):
                 mime_type = mime_part
             base64_data = base64_data.split(",")[1]
-            logger.info(f"[CHAT] Extracted MIME type: {mime_type}")
+            logger.debug(
+                "MIME type extracted from data URL header",
+                extra={"event": "image_mime_resolved", "mime_type": mime_type, "source": "header"},
+            )
         else:
             if base64_data.startswith("iVBORw0KGgo"):
                 mime_type = "image/png"
@@ -29,7 +32,10 @@ def build_image_url(image_data: str, image_type: str) -> str:
                 mime_type = "image/gif"
             elif base64_data.startswith("UklGR"):
                 mime_type = "image/webp"
-            logger.info(f"[CHAT] Detected MIME type: {mime_type}")
+            logger.debug(
+                "MIME type inferred from payload signature",
+                extra={"event": "image_mime_resolved", "mime_type": mime_type, "source": "signature"},
+            )
 
         return f"data:{mime_type};base64,{base64_data}"
 

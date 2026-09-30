@@ -39,6 +39,9 @@ def community_folder(community: str) -> str:
     if folder:
         return folder
 
-    logger.warning(f"[CREATE_SYSTEM] Unknown community label '{community}', deriving folder name")
+    logger.warning(
+        "Unknown community label, deriving folder name",
+        extra={"event": "community_label_unknown", "community": community},
+    )
     normalized = unicodedata.normalize("NFKD", community).encode("ascii", "ignore").decode()
     return re.sub(r"[^A-Za-z]", "", normalized)
