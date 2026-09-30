@@ -1,0 +1,124 @@
+#!/bin/sh
+# Runs the backend (pytest) and frontend (vitest) suites before a push.
+# Enable once per clone: scripts/setup-hooks.ps1  (or scripts/setup-hooks.sh)
+# Bypass with: SKIP_TESTS=1 git push   or   git push --no-verify
+
+set -u
+
+if [ -n "${SKIP_TESTS:-}" ]; then
+    echo "pre-push: SKIP_TESTS is set, skipping tests."
+    exit 0
+fi
+
+ROOT=$(git rev-parse --show-toplevel) || exit 1
+cd "$ROOT" || exit 1
+
+ZERO="0000000000000000000000000000000000000000"
+
+pushing=0
+run_all=0
+changed=""
+
+# stdin lines: <local ref> <local sha> <remote ref> <remote sha>
+while read -r _local_ref local_sha _remote_ref remote_sha; do
+    [ -z "${local_sha:-}" ] && continue
+    case "$local_sha" in
+        *[!0]*) ;;      # real commit
+        *) continue ;;  # all zeros -> ref deletion, nothing to test
+    esac
+    pushing=1
+
+    if [ "${remote_sha:-$ZERO}" = "$ZERO" ]; then
+        base=$(git merge-base "$local_sha" origin/main 2>/dev/null) ||
+            base=$(git merge-base "$local_sha" origin/master 2>/dev/null) ||
+            base=""
+    else
+        base="$remote_sha"
+    fi
+
+    if [ -n "$base" ]; then
+        files=$(git diff --name-only "$base" "$local_sha" 2>/dev/null) || run_all=1
+        changed=$(printf '%s\n%s' "$changed" "$files")
+    else
+        # New branch with no resolvable upstream base: cannot scope, test everything.
+        run_all=1
+    fi
+done
+
+[ "$pushing" -eq 0 ] && exit 0
+
+touches() {
+    printf '%s\n' "$changed" | grep -Eq "$1"
+}
+
+if [ "$run_all" -eq 1 ]; then
+    run_backend=1
+    run_frontend=1
+else
+    run_backend=0
+    run_frontend=0
+    touches '^(src/|vector_db/|tests/backend/|pytest\.ini|.*requirements\.txt)' && run_backend=1
+    touches '^(frontend/|tests/frontend/)' && run_frontend=1
+fi
+
+backend_status="skipped"
+frontend_status="skipped"
+failed=0
+
+if [ "$run_backend" -eq 1 ]; then
+    PY=""
+    for candidate in .venv/Scripts/python.exe .venv/bin/python venv/Scripts/python.exe venv/bin/python; do
+        if [ -x "$candidate" ]; then
+            PY="$candidate"
+            break
+        fi
+    done
+    if [ -z "$PY" ]; then
+        if command -v python >/dev/null 2>&1; then
+            PY=python
+        elif command -v python3 >/dev/null 2>&1; then
+            PY=python3
+        fi
+    fi
+
+    if [ -z "$PY" ]; then
+        echo "pre-push: no Python interpreter found (expected .venv/)."
+        backend_status="ERROR (no interpreter)"
+        failed=1
+    else
+        echo "pre-push: running backend tests ($PY -m pytest)"
+        if "$PY" -m pytest; then
+            backend_status="passed"
+        else
+            backend_status="FAILED"
+            failed=1
+        fi
+    fi
+fi
+
+if [ "$run_frontend" -eq 1 ]; then
+    if [ ! -d frontend/node_modules ]; then
+        echo "pre-push: frontend/node_modules missing, run 'npm install' in frontend/."
+        frontend_status="skipped (no node_modules)"
+    elif ! command -v npm >/dev/null 2>&1; then
+        echo "pre-push: npm not on PATH."
+        frontend_status="skipped (no npm)"
+    else
+        echo "pre-push: running frontend tests (npm --prefix frontend test)"
+        if npm --prefix frontend --silent test; then
+            frontend_status="passed"
+        else
+            frontend_status="FAILED"
+            failed=1
+        fi
+    fi
+fi
+
+echo "pre-push: backend: $backend_status | frontend: $frontend_status"
+
+if [ "$failed" -ne 0 ]; then
+    echo "pre-push: push aborted. Bypass with 'SKIP_TESTS=1 git push' if you know what you are doing."
+    exit 1
+fi
+
+exit 0

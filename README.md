@@ -144,3 +144,7 @@ The frontend production build can be validated with:
 cd frontend
 npm run build
 ```
+
+Both suites also run automatically on `git push`. Enable the hook once per clone with
+`.\scripts\setup-hooks.ps1` (or `sh scripts/setup-hooks.sh`); see
+[tests/README.md](tests/README.md) for details.
