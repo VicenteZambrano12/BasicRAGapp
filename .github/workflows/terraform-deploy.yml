@@ -39,7 +39,6 @@ jobs:
               - 'frontend/**'
               - 'src/**'
               - 'vector_db/**'
-              - 'prompts/**'
 
       - name: Authenticate to GCP (Workload Identity Federation)
         id: auth

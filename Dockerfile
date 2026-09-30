@@ -18,7 +18,6 @@ RUN pip install --no-cache-dir -r src/requirements.txt
 
 COPY src/ ./src/
 COPY vector_db/ ./vector_db/
-COPY prompts/ ./prompts/
 COPY entrypoint.sh ./entrypoint.sh
 RUN chmod +x entrypoint.sh
 
