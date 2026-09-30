@@ -3,6 +3,14 @@ locals {
   cloud_run_service_account_email = "basicragapp-app@basicrahgapp.iam.gserviceaccount.com"
 }
 
+# Lets the Cloud Run SA sign GCS URLs via the IAM signBlob API (no private key file on Cloud Run).
+resource "google_service_account_iam_member" "app_sa_token_creator" {
+  service_account_id = "projects/${var.project_id}/serviceAccounts/${local.cloud_run_service_account_email}"
+  role                = "roles/iam.serviceAccountTokenCreator"
+  member              = "serviceAccount:${local.cloud_run_service_account_email}"
+}
+
+
 module "artifact_registry" {
   source        = "../../modules/artifact_registry"
   project_id    = "basicrahgapp"

@@ -7,6 +7,7 @@ from typing import List, Optional
 from google.cloud import storage
 
 from src.api.DataClasses.chat_response import SourceDoc
+from src.utils.gcs_signing import sign_gcs_url
 
 logger = logging.getLogger(__name__)
 
@@ -25,8 +26,8 @@ def _get_storage_client() -> storage.Client:
 
 def _sign_url(bucket_name: str, object_name: str) -> str:
     """Generate a short-lived v4 signed URL for a private GCS object."""
-    blob = _get_storage_client().bucket(bucket_name).blob(object_name)
-    return blob.generate_signed_url(version="v4", expiration=SIGNED_URL_EXPIRY, method="GET")
+    bucket = _get_storage_client().bucket(bucket_name)
+    return sign_gcs_url(bucket, object_name, SIGNED_URL_EXPIRY)
 
 
 def build_sources(documents: list) -> List[SourceDoc]:
