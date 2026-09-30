@@ -25,6 +25,15 @@ if [ "$WORKERS" -gt "$MAX_WORKERS" ]; then
   WORKERS=$MAX_WORKERS
 fi
 
+# Without a real Redis (REDIS_HOST/REDIS_URL), session state falls back to
+# fakeredis, an in-memory cache local to a single process. Multiple worker
+# processes would each get their own cache, so /chat would randomly fail with
+# "Call /create_system first" depending on which worker handled the request.
+if [ -z "${REDIS_HOST:-}" ] && [ -z "${REDIS_URL:-}" ] && [ "$WORKERS" -gt 1 ]; then
+  echo "REDIS_HOST/REDIS_URL not set; forcing a single worker so fakeredis is shared"
+  WORKERS=1
+fi
+
 echo "Starting Gunicorn with $WORKERS workers on $CPU_COUNT CPUs"
 
 exec gunicorn \

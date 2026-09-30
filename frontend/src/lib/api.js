@@ -5,11 +5,18 @@ const API_URL = (import.meta.env.VITE_API_URL || '/api').replace(/\/$/, '');
 // Matches the backend's RequestLoggingMiddleware header (src/api/middleware/logging_middleware.py).
 const CORRELATION_ID_HEADER = 'X-Request-ID';
 
+// Long enough for the /chat endpoint's LLM round-trip; short requests fail well before this.
+const DEFAULT_TIMEOUT_MS = 30000;
+
 async function request(path, options = {}) {
-  const method = options.method || 'GET';
+  const { timeoutMs = DEFAULT_TIMEOUT_MS, ...fetchOptions } = options;
+  const method = fetchOptions.method || 'GET';
   const outgoingCorrelationId = crypto.randomUUID?.() || `${Date.now()}-${Math.random().toString(16).slice(2)}`;
 
   logger.debug(`API request: ${method} ${path}`, { correlationId: outgoingCorrelationId });
+
+  const timeoutController = new AbortController();
+  const timeoutId = setTimeout(() => timeoutController.abort(), timeoutMs);
 
   let response;
   try {
@@ -18,14 +25,18 @@ async function request(path, options = {}) {
         'Content-Type': 'application/json',
         [CORRELATION_ID_HEADER]: outgoingCorrelationId,
       },
-      ...options,
+      signal: timeoutController.signal,
+      ...fetchOptions,
     });
   } catch (networkError) {
-    logger.error(`API network error: ${method} ${path}`, {
+    const isTimeout = networkError.name === 'AbortError';
+    logger.error(`API ${isTimeout ? 'timeout' : 'network error'}: ${method} ${path}`, {
       correlationId: outgoingCorrelationId,
       message: networkError.message,
     });
-    throw networkError;
+    throw new Error(isTimeout ? 'Request timed out' : networkError.message);
+  } finally {
+    clearTimeout(timeoutId);
   }
 
   // The backend echoes back its own correlation id (generated if none was sent).
@@ -49,8 +60,8 @@ async function request(path, options = {}) {
   return response.json();
 }
 
-/** Checks backend availability, called on app load/reload. */
-export const checkHealth = () => request('/', { method: 'GET' });
+/** Checks backend availability, called on app load/reload. Short timeout so polling retries quickly. */
+export const checkHealth = () => request('/', { method: 'GET', timeoutMs: 5000 });
 
 /** Fetches the localized autonomous communities and subjects. */
 export const getConfig = (language = 'ES') => request(`/config?language=${language}`, { method: 'GET' });

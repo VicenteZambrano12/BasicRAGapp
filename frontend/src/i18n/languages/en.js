@@ -1,6 +1,7 @@
 const en = {
   appTagline: 'Your AI assistant for the PAU',
   backendUnavailable: 'Unable to reach the backend service. Some features may not work.',
+  backendStarting: 'Connecting to the backend, please wait...',
   studyConfig: 'Study Configuration',
   studyConfigHint: 'Customize the context for your answers.',
   regionLabel: 'Select your autonomous community:',

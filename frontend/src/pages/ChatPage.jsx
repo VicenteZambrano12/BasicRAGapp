@@ -5,8 +5,19 @@ import { getTranslations } from '../i18n';
 
 /** Renders the study configuration and AI chat workspace. */
 export const ChatPage = () => {
-  const { config, updateConfig, communities, subjects, messages, sendMessage, isLoading, error, isBackendAvailable } = useChatStore();
+  const { config, updateConfig, communities, subjects, messages, sendMessage, isLoading, error, isBackendAvailable, isBackendStarting } = useChatStore();
   const translations = getTranslations(config.language);
+
+  if (isBackendStarting) {
+    return (
+      <AppLayout translations={translations} language={config.language}>
+        <div role="status" className="flex h-full min-h-[50vh] flex-col items-center justify-center gap-4 text-center">
+          <div className="h-10 w-10 animate-spin rounded-full border-4 border-blue-200 border-t-[#1E3A8A]" aria-hidden="true" />
+          <p className="text-sm font-semibold text-gray-600">{translations.backendStarting}</p>
+        </div>
+      </AppLayout>
+    );
+  }
 
   return (
     <AppLayout translations={translations} language={config.language}>

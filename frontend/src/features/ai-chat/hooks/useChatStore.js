@@ -1,10 +1,12 @@
 ﻿import { useEffect, useRef, useState } from 'react';
 import { checkHealth, createSystem, fileToDataUrl, getConfig, sendChatMessage } from '../../../lib/api';
 
+const HEALTH_POLL_INTERVAL_MS = 3000;
+
 /**
  * Manages the active study configuration, chat messages, and API request state.
  *
- * @returns {{ config: object, updateConfig: Function, communities: Array<string>, subjects: Array<string>, messages: Array<object>, sendMessage: Function, isLoading: boolean, error: string, isBackendAvailable: boolean }}
+ * @returns {{ config: object, updateConfig: Function, communities: Array<string>, subjects: Array<string>, messages: Array<object>, sendMessage: Function, isLoading: boolean, error: string, isBackendAvailable: boolean, isBackendStarting: boolean }}
  */
 export const useChatStore = () => {
   const sessionId = useRef(crypto.randomUUID()).current;
@@ -18,16 +20,37 @@ export const useChatStore = () => {
   const [messages, setMessages] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
-  const [isBackendAvailable, setIsBackendAvailable] = useState(true);
+  const [isBackendAvailable, setIsBackendAvailable] = useState(false);
+  const [isBackendStarting, setIsBackendStarting] = useState(true);
 
-  // Verifies the backend is reachable whenever the app loads or reloads.
+  // Polls until the backend responds. Frontend deploys can finish before the
+  // backend container is ready, so a single check would show a false failure.
   useEffect(() => {
-    checkHealth()
-      .then(() => setIsBackendAvailable(true))
-      .catch(() => setIsBackendAvailable(false));
+    let cancelled = false;
+    let timeoutId;
+
+    const poll = async () => {
+      try {
+        await checkHealth();
+        if (cancelled) return;
+        setIsBackendAvailable(true);
+        setIsBackendStarting(false);
+      } catch {
+        if (cancelled) return;
+        setIsBackendAvailable(false);
+        timeoutId = setTimeout(poll, HEALTH_POLL_INTERVAL_MS);
+      }
+    };
+
+    poll();
+    return () => {
+      cancelled = true;
+      clearTimeout(timeoutId);
+    };
   }, []);
 
   useEffect(() => {
+    if (!isBackendAvailable) return;
     let cancelled = false;
 
     const loadConfig = async () => {
@@ -48,10 +71,10 @@ export const useChatStore = () => {
 
     loadConfig();
     return () => { cancelled = true; };
-  }, [config.language]);
+  }, [isBackendAvailable, config.language]);
 
   useEffect(() => {
-    if (!config.region || !config.subject) return;
+    if (!isBackendAvailable || !config.region || !config.subject) return;
 
     let cancelled = false;
 
@@ -69,7 +92,7 @@ export const useChatStore = () => {
 
     initialize();
     return () => { cancelled = true; };
-  }, [config.region, config.subject, config.language, sessionId]);
+  }, [isBackendAvailable, config.region, config.subject, config.language, sessionId]);
 
 
   const updateConfig = (key, value) => {
@@ -109,5 +132,5 @@ export const useChatStore = () => {
     }
   };
 
-  return { config, updateConfig, communities, subjects, messages, sendMessage, isLoading, error, isBackendAvailable };
+  return { config, updateConfig, communities, subjects, messages, sendMessage, isLoading, error, isBackendAvailable, isBackendStarting };
 };
