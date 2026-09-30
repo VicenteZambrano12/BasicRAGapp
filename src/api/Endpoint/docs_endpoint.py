@@ -9,6 +9,7 @@ from fastapi.responses import RedirectResponse
 from google.cloud import storage
 
 from src.config.config_loader import config
+from src.utils.gcs_signing import sign_gcs_url
 
 logger = logging.getLogger(__name__)
 
@@ -47,8 +48,8 @@ async def get_how_it_works_pdf(language: Literal["ES", "EN"] = "ES") -> Redirect
     bucket_name = config("GCS_BUCKET_NAME")
 
     try:
-        blob = _get_storage_client().bucket(bucket_name).blob(object_name)
-        url = blob.generate_signed_url(version="v4", expiration=SIGNED_URL_EXPIRY, method="GET")
+        bucket = _get_storage_client().bucket(bucket_name)
+        url = sign_gcs_url(bucket, object_name, SIGNED_URL_EXPIRY)
     except Exception as exc:
         logger.error(f"[DOCS] Failed to sign URL for '{object_name}': {exc}", exc_info=True)
         raise HTTPException(status_code=502, detail="Unable to retrieve the requested document.") from exc
