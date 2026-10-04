@@ -1,150 +1,136 @@
 # PAUHelper
 
-PAUHelper is a retrieval-augmented study assistant for Spain's university entrance exam (PAU). It provides localized AI chat support using curriculum context selected by autonomous community, subject, and language.
+PAUHelper is a retrieval-augmented study assistant for Spain's university entrance exam (PAU). Students select an autonomous community, subject, and language, then ask curriculum-grounded questions in a chat interface. The app supports English and Spanish, including image-assisted questions.
 
-## Project Structure
+## Project structure
 
-- `frontend/`: React and Vite user interface for study configuration, chat, image attachments, localization, and the How It Works PDF.
-- `src/`: FastAPI backend and application services.
-- `vector_db/`: Vector database management and migration utilities.
-- `content/`: Subject and regional curriculum source material.
-- `prompts/`: Regional and subject-specific prompt content.
+- `frontend/`: React and Vite user interface, localization, chat, and static assets.
+- `src/`: FastAPI backend, API routes, retrieval workflow, and application services.
+- `vector_db/`: Qdrant client and curriculum ingestion utilities.
+- `content/`: Source curriculum material organized by subject.
+- `config/`: Localized study configuration.
 - `infra/`: Terraform infrastructure configuration.
-
-## Frontend Module
-
-The `frontend/src` module renders the PAUHelper application workspace. It manages study configuration, localized chat interactions, image attachments, loading and error states, backend communication, and the How It Works PDF experience.
-
-The frontend relies on React, ReactDOM, Vite, and Tailwind CSS. Chat configuration, messages, request state, and errors are managed through the `useChatStore` hook. Backend requests use the `VITE_API_URL` environment variable and default to `http://localhost:8000`.
-
-## Backend API Module
-
-The `src/api` module exposes the FastAPI entry point for PAUHelper. It composes the application lifecycle, publishes localized study configuration, initializes session-specific retrieval systems, and handles text or image-assisted chat requests.
-
-Key endpoints include `GET /` for health and cache diagnostics, `GET /config` for localized communities and subjects, `POST /create_system` for session system initialization, and `POST /chat` for assistant responses.
+- `tests/`: Backend pytest and frontend Vitest suites.
 
 ## Requirements
 
 - Python 3.12 or later
-- uv
-- Node.js and npm
-- Google Cloud credentials for Vertex AI or Gemini integrations
-- Qdrant and Redis services
+- [uv](https://docs.astral.sh/uv/)
+- Node.js 24 and npm
+- Google AI / Google Cloud credentials for the configured language model and embeddings
+- A Qdrant instance containing the curriculum data
 
-## Local Python Setup with uv
+Redis is optional for local development. Without a reachable Redis configured through `REDIS_URL` or `REDIS_HOST`, the backend uses an in-memory cache. That cache is not shared between processes or retained across restarts; configure Redis when running multiple backend workers.
 
-Install `uv` if it is not already available:
+## Configuration
 
-Windows PowerShell:
-
-```powershell
-powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"
-```
-
-macOS or Linux:
-
-```bash
-curl -LsSf https://astral.sh/uv/install.sh | sh
-```
-
-From the repository root, remove an existing virtual environment, create a new one, and install the backend dependencies:
-
-Windows PowerShell:
+Create a root `.env` from the sample file:
 
 ```powershell
-Remove-Item -Recurse -Force venv, .venv, env -ErrorAction SilentlyContinue
+Copy-Item .env.sample .env
+```
+
+Set the values appropriate for your environment. The sample lists the supported settings, including:
+
+- Model access: `GEMINI_API_KEY`, `GCP_API_KEY`, `GOOGLE_APPLICATION_CREDENTIALS`, `GOOGLE_GENAI_USE_ENTERPRISE`, `GOOGLE_CLOUD_PROJECT`, `GOOGLE_CLOUD_LOCATION`, `LLM_MODEL`, and `EMBEDDING_MODEL`.
+- Vector database: `QDRANT_URL` and `QDRANT_API_KEY` for Qdrant Cloud, or `QDRANT_HOST` and `QDRANT_PORT` for a self-hosted instance.
+- Documents and ingestion: `GCS_BUCKET_NAME` and `CONTENT_DIRECTORY`.
+- Runtime mode: `MODE` (`LOCAL` for local development).
+
+Only configure the credentials and service settings needed by your selected integrations. Keep `.env` and service-account credentials out of version control.
+
+## Run locally
+
+### Backend
+
+From the repository root, create a virtual environment and install the backend requirements:
+
+```powershell
 uv venv
 uv pip install --python .venv\Scripts\python.exe -r src\requirements.txt
 ```
 
-macOS or Linux:
+On macOS or Linux, use `.venv/bin/python` in place of `.venv\Scripts\python.exe` in the commands below.
 
-```bash
-rm -rf venv .venv env
-uv venv
-uv pip install --python .venv/bin/python -r src/requirements.txt
-```
-
-To record the installed, resolved versions back into the dependency file:
-
-Windows PowerShell:
+Start the API from the repository root:
 
 ```powershell
-uv pip freeze --python .venv\Scripts\python.exe | Set-Content src\requirements.txt
+.venv\Scripts\python.exe -m uvicorn src.app:app --reload --host 0.0.0.0 --port 8000
 ```
 
-macOS or Linux:
+The API is available at `http://localhost:8000`; interactive API documentation is at `http://localhost:8000/docs`. The backend attempts to initialize its embedding model and connect to Qdrant on startup, so configure valid credentials and a reachable vector database for full functionality.
 
-```bash
-uv pip freeze --python .venv/bin/python > src/requirements.txt
-```
+### Frontend
 
-The commands below use `uv run`, so manually activating the virtual environment is optional.
+In a separate terminal:
 
-## Configuration
-
-Copy `.env.sample` to `.env` and configure the required values, including:
-
-- `GOOGLE_CLOUD_PROJECT`
-- `GOOGLE_CLOUD_LOCATION`
-- `GOOGLE_APPLICATION_CREDENTIALS`
-- `LLM_MODEL`
-- `EMBEDDING_MODEL`
-- `VECTOR_DB_TYPE`
-- Qdrant connection settings when using Qdrant Cloud
-
-Keep service-account credentials outside version control.
-
-## Run the Backend Locally
-
-Start the API with:
-
-```bash
-uv run uvicorn src.app:app --reload --host 0.0.0.0 --port 8000
-```
-
-The backend is available at `http://localhost:8000`. Ensure that Qdrant and Redis are running through your preferred local or hosted service.
-
-## Run the Frontend Locally
-
-```bash
+```powershell
 cd frontend
-npm install
+npm ci
 npm run dev
 ```
 
-The Vite development server runs on port `3000` by default. To point the frontend at a different backend, set `VITE_API_URL` before starting Vite.
+Open `http://localhost:3000`. In local mode, Vite proxies `/api` requests to the backend at `http://localhost:8000`. The frontend's API base defaults to `/api`; set `VITE_API_URL` if the API is hosted at a different base URL.
 
-To create a production frontend bundle:
+To build the production frontend bundle:
 
-```bash
-cd frontend
+```powershell
 npm run build
 ```
 
-## Populate the Knowledge Base
+## API
 
-The ingestion script processes the source material used by the retrieval system:
+API routes are prefixed with `/api`:
 
-```bash
-uv run python ingest.py
+| Method | Path | Purpose |
+| --- | --- | --- |
+| `GET` | `/api/` | Health and cache diagnostics |
+| `GET` | `/api/config?language=ES` | Localized communities and subjects (`ES` or `EN`) |
+| `POST` | `/api/create_system` | Initialize a study system for the selected session context |
+| `POST` | `/api/chat` | Send a text or image-assisted chat request |
+| `GET` | `/api/docs/how-it-works?language=ES` | Redirect to the localized How It Works PDF in Google Cloud Storage |
+
+See `/docs` on a running backend for request and response schemas.
+
+## Ingest curriculum content
+
+Run the ingestion utility from the repository root. By default it reads `./content`; set `CONTENT_DIRECTORY` to use another source directory. Configure Google credentials and Qdrant before running:
+
+```powershell
+.venv\Scripts\python.exe vector_db\ingest.py
 ```
 
-## Testing
+## Tests
 
-Backend API tests can be run with:
+Install the backend and test requirements, then run pytest from the repository root:
 
-```bash
-uv run --with pytest pytest
+```powershell
+uv pip install --python .venv\Scripts\python.exe -r src\requirements.txt -r tests\requirements.txt
+.venv\Scripts\python.exe -m pytest
 ```
 
-The frontend production build can be validated with:
+Run the frontend tests from `frontend/`:
 
-```bash
-cd frontend
-npm run build
+```powershell
+npm test
 ```
 
-Both suites also run automatically on `git push`. Enable the hook once per clone with
-`.\scripts\setup-hooks.ps1` (or `sh scripts/setup-hooks.sh`); see
-[tests/README.md](tests/README.md) for details.
+The frontend production build can also be checked with `npm run build`. Test setup stubs external service boundaries, so the suites do not require live Qdrant, Google AI, or Google Cloud Storage services. See [tests/README.md](tests/README.md) for test organization, coverage commands, and details.
+
+Both suites run in GitHub Actions and can run before `git push` when the repository hook is enabled:
+
+```powershell
+.\scripts\setup-hooks.ps1
+```
+
+On macOS or Linux, run `sh scripts/setup-hooks.sh`.
+
+## Container
+
+The root `Dockerfile` builds the Vite frontend and packages it with the FastAPI backend in a single image. Build it from the repository root:
+
+```powershell
+docker build -t pauhelper .
+```
+
+The container listens on port `8080` by default (or the `PORT` value supplied by the runtime). Provide the required model, Qdrant, and Google Cloud settings to the container environment. For local Docker runs, make Application Default Credentials or the credentials file available inside the container as well. Terraform configuration for infrastructure is in `infra/`.
