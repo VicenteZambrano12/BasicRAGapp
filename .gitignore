@@ -12,3 +12,11 @@ frontend/dist/
 frontend/.env*
 !frontend/.env.example
 /content
+
+# Terraform
+**/.terraform/
+*.tfstate
+*.tfstate.*
+tfplan
+*.auto.tfvars
+infra/**/.build/
