@@ -9,28 +9,37 @@
 #
 # No dedicated service account is created for the function — it runs as
 # the shared portfolio-repo-sa@basicrahgapp.iam.gserviceaccount.com
-# identity (same one used for Cloud Run and for Terraform/CI itself), so
-# step (a) below is typically already satisfied once granted. Run this
-# once after `terraform apply` has created the Cloud Function.
-# Requires the gcloud CLI, authenticated as a principal with Owner/IAM
-# Admin + Cloud Functions Admin on the project.
+# identity, which already has roles/compute.instanceAdmin.v1 (granted
+# earlier for a different purpose), so step (a) below is typically a
+# no-op here. Run this once after `terraform apply` has created the
+# Cloud Function. Requires the gcloud CLI, authenticated as a principal
+# with Owner/IAM Admin + Cloud Functions Admin on the project.
 #
-# NOTE: portfolio-repo-sa@basicrahgapp.iam.gserviceaccount.com is the
-# identity this repo's Terraform/CI (GCP_TERRAFORM_SERVICE_ACCOUNT) runs
-# as, AND (as of 2026-10-04) the Cloud Function's runtime identity. It was
-# granted (one-time, project-level):
-#   roles/compute.instanceAdmin.v1   (read the BasicRAGapp-owned VM via
-#                                      data "google_compute_instance", and
-#                                      start it from inside the function)
-#   roles/storage.admin              (create the function-source bucket;
-#                                      storage.objectAdmin alone cannot
-#                                      create buckets)
-#   roles/cloudfunctions.admin       (create/update the 2nd-gen function)
-#   roles/cloudbuild.builds.editor   (2nd-gen function deploys run a
-#                                      Cloud Build job under the hood)
-#   roles/iam.serviceAccountAdmin    (no longer required now that no
-#                                      dedicated SA is created; left in
-#                                      place, safe to revoke if desired)
+# NOTE on the three *deploying* identities involved (none of these is the
+# function's runtime SA above — they're who/what runs `terraform apply`
+# and the build behind it):
+#
+#   basicragapp-app@basicrahgapp.iam.gserviceaccount.com is this repo's
+#   actual Terraform/CI identity (its Workload Identity Federation binding
+#   is scoped to the BasicRAGapp GitHub repo — portfolio-repo-sa's WIF
+#   binding is scoped to PersonalPortfolioRepo instead, so it can NOT
+#   authenticate from here despite being used elsewhere in this project).
+#   It was granted (one-time, project-level), in addition to roles it
+#   already had (storage.admin, run.admin, compute.admin, etc.):
+#     roles/cloudfunctions.admin       (create/update the 2nd-gen function)
+#     roles/cloudbuild.builds.editor   (2nd-gen function deploys run a
+#                                        Cloud Build job under the hood)
+#
+#   31049783945-compute@developer.gserviceaccount.com (this project's
+#   default Compute Engine SA) is the identity Cloud Build itself actually
+#   runs 2nd-gen function builds as (not the legacy
+#   31049783945@cloudbuild.gserviceaccount.com SA, which already had
+#   cloudbuild.builds.builder and was NOT the problem). It had zero IAM
+#   roles, causing "Could not build the function due to a missing
+#   permission on the build service account". Granted:
+#     roles/cloudbuild.builds.builder
+#     roles/logging.logWriter
+#
 # The cloudfunctions.googleapis.com, cloudbuild.googleapis.com and
 # eventarc.googleapis.com APIs were also enabled on the project (they
 # were disabled by default and Terraform does not enable them itself).
@@ -38,12 +47,18 @@
 #   gcloud services enable cloudfunctions.googleapis.com \
 #     cloudbuild.googleapis.com eventarc.googleapis.com \
 #     --project=basicrahgapp
-#   for role in compute.instanceAdmin.v1 storage.admin \
-#     cloudfunctions.admin cloudbuild.builds.editor; do
-#     gcloud projects add-iam-policy-binding basicrahgapp \
-#       --member="serviceAccount:portfolio-repo-sa@basicrahgapp.iam.gserviceaccount.com" \
-#       --role="roles/${role}" --condition=None
-#   done
+#   gcloud projects add-iam-policy-binding basicrahgapp \
+#     --member="serviceAccount:basicragapp-app@basicrahgapp.iam.gserviceaccount.com" \
+#     --role="roles/cloudfunctions.admin" --condition=None
+#   gcloud projects add-iam-policy-binding basicrahgapp \
+#     --member="serviceAccount:basicragapp-app@basicrahgapp.iam.gserviceaccount.com" \
+#     --role="roles/cloudbuild.builds.editor" --condition=None
+#   gcloud projects add-iam-policy-binding basicrahgapp \
+#     --member="serviceAccount:31049783945-compute@developer.gserviceaccount.com" \
+#     --role="roles/cloudbuild.builds.builder" --condition=None
+#   gcloud projects add-iam-policy-binding basicrahgapp \
+#     --member="serviceAccount:31049783945-compute@developer.gserviceaccount.com" \
+#     --role="roles/logging.logWriter" --condition=None
 #
 # Usage:
 #   PROJECT_ID=my-project \

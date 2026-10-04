@@ -5,13 +5,23 @@ from datetime import timedelta
 
 import pytest
 
-from src.api.Endpoint import config_endpoint, docs_endpoint
+from src.api.Endpoint import config_endpoint, docs_endpoint, home_endpoint
 from src.utils.cache import graph_config_cache, graph_instance_cache
 
 pytestmark = pytest.mark.integration
 
 
 class TestHomeEndpoint:
+    @pytest.fixture(autouse=True)
+    def qdrant_reachable(self, monkeypatch):
+        """Stub Qdrant as reachable by default; individual tests override to simulate downtime."""
+
+        class FakeQdrantClient:
+            def get_collections(self):
+                return object()
+
+        monkeypatch.setattr(home_endpoint, "get_qdrant_client", lambda timeout=None: FakeQdrantClient())
+
     def test_reports_service_status_and_cache_diagnostics(self, client):
         response = client.get("/api/")
 
@@ -30,6 +40,19 @@ class TestHomeEndpoint:
 
         assert body["cached_configs"] == 1
         assert body["cached_instances"] == 1
+
+    def test_reports_503_while_qdrant_is_unreachable(self, client, monkeypatch):
+        """Covers the on-demand Qdrant VM's boot window: health polling must keep retrying, not falsely succeed."""
+
+        def boom(timeout=None):
+            raise ConnectionError("Qdrant is not reachable")
+
+        monkeypatch.setattr(home_endpoint, "get_qdrant_client", boom)
+
+        response = client.get("/api/")
+
+        assert response.status_code == 503
+        assert "starting up" in response.json()["detail"]
 
 
 class TestConfigEndpoint:

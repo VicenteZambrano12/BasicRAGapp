@@ -8,6 +8,7 @@ import json
 
 import pytest
 
+from src.api.Endpoint import home_endpoint
 from src.system.chat import build_sources as build_sources_module
 from src.system.create_system import initialize_and_cache_graph as initialize_module
 from src.utils.cache import get_str_field_from_cache, graph_instance_cache
@@ -16,6 +17,17 @@ from tests.backend.factories import FakeGraph, FakeMessage
 pytestmark = pytest.mark.integration
 
 SESSION_ID = "conversation-session"
+
+
+@pytest.fixture(autouse=True)
+def qdrant_reachable(monkeypatch):
+    """This suite exercises conversation flow, not Qdrant connectivity; stub it as up."""
+
+    class FakeQdrantClient:
+        def get_collections(self):
+            return object()
+
+    monkeypatch.setattr(home_endpoint, "get_qdrant_client", lambda timeout=None: FakeQdrantClient())
 
 
 class ScriptedGraph:
