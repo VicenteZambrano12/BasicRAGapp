@@ -1,4 +1,5 @@
 import hashlib
+import logging
 import mimetypes
 import os
 import re
@@ -15,7 +16,7 @@ from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_community.document_loaders import PyPDFLoader
 from langchain_core.embeddings import Embeddings
 
-# Windows terminals default to cp1252, which can't encode the emoji used in prints below.
+# Windows terminals default to cp1252, which can't encode non-latin characters in log output.
 if sys.stdout.encoding and sys.stdout.encoding.lower() != "utf-8":
     sys.stdout.reconfigure(encoding="utf-8")
     sys.stderr.reconfigure(encoding="utf-8")
@@ -25,7 +26,10 @@ load_dotenv(override=True)
 
 # Assuming these are available in your repository structure
 from src.config.config_loader import config
+from src.utils.observability.logger import configure_logging
 from vector_db.manager import get_vector_store
+
+logger = logging.getLogger(__name__)
 
 # All ingested source files live under this folder in the GCS bucket, mirroring
 # the local content/<subject>/... structure (e.g. gs://<bucket>/docs/biology/foo.pdf).
@@ -106,13 +110,22 @@ def upload_to_gcs(bucket: "storage.Bucket", local_path: str, object_name: str) -
         blob.reload()
         existing_hash = (blob.metadata or {}).get("source_sha256")
         if existing_hash == file_hash:
-            print(f"↷ Skipping GCS upload (unchanged): {object_name}")
+            logger.info(
+                "Skipping GCS upload, object unchanged",
+                extra={"event": "gcs_upload_skipped", "object_name": object_name},
+            )
         else:
-            print(f"⬆ Uploading (changed): {object_name}")
+            logger.info(
+                "Uploading changed object to GCS",
+                extra={"event": "gcs_upload_started", "object_name": object_name, "reason": "changed"},
+            )
             _upload_blob(blob, local_path, file_hash, blob.generation)
             blob.reload()
     except NotFound:
-        print(f"⬆ Uploading (new): {object_name}")
+        logger.info(
+            "Uploading new object to GCS",
+            extra={"event": "gcs_upload_started", "object_name": object_name, "reason": "new"},
+        )
         _upload_blob(blob, local_path, file_hash, 0)
         blob.reload()
 
@@ -140,11 +153,16 @@ def create_vector_db(path: str, bucket: "storage.Bucket", content_root: str, use
     # relative_path (unprefixed) stays the stable doc_id/chunk_id key in Qdrant;
     # only the physical GCS object lives under the docs/ folder.
     gcs_object_name = f"{GCS_DOCS_PREFIX}/{relative_path}"
-    print(f"Uploading source file to GCS: {gcs_object_name}")
     gcs_location = upload_to_gcs(bucket, path, gcs_object_name)
-    print(f"✓ GCS object ready: {gcs_location['gcs_uri']} (generation {gcs_location['gcs_generation']})")
+    logger.info(
+        "GCS object ready",
+        extra={
+            "event": "gcs_object_ready",
+            "gcs_uri": gcs_location["gcs_uri"],
+            "generation": gcs_location["gcs_generation"],
+        },
+    )
 
-    print(f"\nLoading Gemini embeddings model for {subject}...")
     try:
         credentials_path = config("GOOGLE_APPLICATION_CREDENTIALS")
         if not os.path.exists(credentials_path):
@@ -154,19 +172,27 @@ def create_vector_db(path: str, bucket: "storage.Bucket", content_root: str, use
         embeddings = ModernGeminiEmbeddings(
             model=embedding_model,
         )
-        print(f"✓ Gemini Embeddings model loaded ({embedding_model})")
-    except Exception as e:
-        print(f"❌ Failed to initialize Gemini embeddings: {e}")
-        raise e
+        logger.info(
+            "Gemini embeddings model loaded",
+            extra={"event": "embeddings_loaded", "embedding_model": embedding_model, "subject": subject},
+        )
+    except Exception:
+        logger.error(
+            "Failed to initialize Gemini embeddings",
+            exc_info=True,
+            extra={"event": "embeddings_load_failed", "subject": subject},
+        )
+        raise
 
-    print(f"Connecting to vector database for collection: {subject}")
     vector_store = get_vector_store(
         collection_name=subject,
         embeddings=embeddings
     )
-    print("✓ Vector store connected")
-    
-    print(f"Loading PDF from: {path}")
+
+    logger.info(
+        "Loading PDF",
+        extra={"event": "pdf_loading", "path": path, "subject": subject},
+    )
     loader = PyPDFLoader(path)
     docs = loader.load()
     
@@ -174,11 +200,19 @@ def create_vector_db(path: str, bucket: "storage.Bucket", content_root: str, use
     if use_ultra_compact:
         chunk_size = 1000
         chunk_overlap = 100
-        print("Using compact chunking (~256 tokens)")
     else:
         chunk_size = 2000
         chunk_overlap = 300
-        print("Using standard chunking (~512 tokens)")
+
+    logger.debug(
+        "Chunking configuration selected",
+        extra={
+            "event": "chunking_configured",
+            "chunk_size": chunk_size,
+            "chunk_overlap": chunk_overlap,
+            "compact": use_ultra_compact,
+        },
+    )
     
     text_splitter = RecursiveCharacterTextSplitter(
         chunk_size=chunk_size,
@@ -189,7 +223,6 @@ def create_vector_db(path: str, bucket: "storage.Bucket", content_root: str, use
     
     all_splits = text_splitter.split_documents(docs)
     
-    print("Validating, cleaning, and injecting context into chunks...")
     ingested_at = datetime.now(timezone.utc).isoformat()
     valid_splits = []
     for doc in all_splits:
@@ -229,7 +262,15 @@ def create_vector_db(path: str, bucket: "storage.Bucket", content_root: str, use
     
     batch_size = 100 
     total_batches = (len(all_splits) + batch_size - 1) // batch_size
-    print(f"Adding {len(all_splits)} documents in {total_batches} batches...")
+    logger.info(
+        "Indexing chunks into vector store",
+        extra={
+            "event": "indexing_started",
+            "subject": subject,
+            "chunk_count": len(all_splits),
+            "total_batches": total_batches,
+        },
+    )
     
     failed_docs = []
     for i in range(0, len(all_splits), batch_size):
@@ -237,7 +278,11 @@ def create_vector_db(path: str, bucket: "storage.Bucket", content_root: str, use
         batch_ids = point_ids[i:i + batch_size]
         try:
             vector_store.add_documents(documents=batch, ids=batch_ids)
-        except Exception as e:
+        except Exception:
+            logger.warning(
+                "Batch insert failed, retrying documents individually",
+                extra={"event": "batch_insert_failed", "subject": subject, "batch_start": i},
+            )
             for j, doc in enumerate(batch):
                 try:
                     vector_store.add_documents(documents=[doc], ids=[batch_ids[j]])
@@ -245,9 +290,24 @@ def create_vector_db(path: str, bucket: "storage.Bucket", content_root: str, use
                     failed_docs.append((i+j, doc, str(doc_error)))
     
     if failed_docs:
-        print(f"\n⚠ Warning: {len(failed_docs)} documents failed to add")
+        logger.warning(
+            "Some documents could not be indexed",
+            extra={
+                "event": "indexing_partial_failure",
+                "subject": subject,
+                "failed_count": len(failed_docs),
+                "chunk_count": len(all_splits),
+            },
+        )
     else:
-        print(f"✓ All documents added successfully")
+        logger.info(
+            "All chunks indexed successfully",
+            extra={
+                "event": "indexing_completed",
+                "subject": subject,
+                "chunk_count": len(all_splits),
+            },
+        )
         # Safe to prune now: every current chunk was just (re)upserted successfully,
         # so any stored chunk at or beyond this count must be stale.
         vector_store.delete_stale_chunks(relative_path, len(all_splits))
@@ -259,18 +319,53 @@ def process_directory(content_dir: str, bucket: "storage.Bucket"):
     pdf_files = list(base_path.rglob("*.pdf"))
     
     if not pdf_files:
-        print(f"No PDF files found inside {content_dir}.")
+        logger.warning(
+            "No PDF files found",
+            extra={"event": "no_source_files", "content_dir": content_dir},
+        )
         return
 
+    logger.info(
+        "Starting ingestion run",
+        extra={
+            "event": "ingestion_started",
+            "content_dir": content_dir,
+            "file_count": len(pdf_files),
+        },
+    )
+
+    succeeded = 0
     for pdf_path in pdf_files:
-        print(f"\n--- Processing: {pdf_path.name} ---")
         try:
             collection = create_vector_db(str(pdf_path), bucket, content_dir, use_ultra_compact=False)
-            print(f"✅ SUCCESS! Indexed to collection '{collection}'")
-        except Exception as e:
-            print(f"\n❌ ERROR processing '{pdf_path.name}': {e}")
+            succeeded += 1
+            logger.info(
+                "File indexed",
+                extra={
+                    "event": "file_indexed",
+                    "file_name": pdf_path.name,
+                    "collection": collection,
+                },
+            )
+        except Exception:
+            logger.error(
+                "Failed to process file",
+                exc_info=True,
+                extra={"event": "file_processing_failed", "file_name": pdf_path.name},
+            )
+
+    logger.info(
+        "Ingestion run finished",
+        extra={
+            "event": "ingestion_completed",
+            "succeeded": succeeded,
+            "failed": len(pdf_files) - succeeded,
+            "file_count": len(pdf_files),
+        },
+    )
 
 if __name__ == "__main__":
+    configure_logging()
     CONTENT_DIRECTORY = os.getenv("CONTENT_DIRECTORY", "./content")
     bucket_name = config("GCS_BUCKET_NAME")
     storage_client = storage.Client(project=os.getenv("GOOGLE_CLOUD_PROJECT"))

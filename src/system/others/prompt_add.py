@@ -17,9 +17,15 @@ NUNCA digas que no puedes ver, analizar o responder a imágenes.
 
 # Check if the directory exists
 if not os.path.isdir(target_directory):
-    logger.error(f"Directory '{target_directory}' not found.")
+    logger.error(
+        "Target directory not found",
+        extra={"event": "directory_not_found", "directory": target_directory},
+    )
 else:
-    logger.info(f"Processing files in '{target_directory}'...")
+    logger.info(
+        "Processing prompt files",
+        extra={"event": "prompt_patch_started", "directory": target_directory},
+    )
     
     for root, dirs, files in os.walk(target_directory):
         for file in files:
@@ -44,9 +50,16 @@ else:
                     with open(file_path, 'w', encoding='utf-8') as f:
                         f.writelines(lines)
                         
-                    logger.info(f"Updated: {file_path}")
+                    logger.info(
+                        "Prompt file updated",
+                        extra={"event": "prompt_file_updated", "file_path": file_path},
+                    )
 
-                except Exception as e:
-                    logger.error(f"Failed to update {file_path}: {e}", exc_info=True)
+                except Exception:
+                    logger.error(
+                        "Failed to update prompt file",
+                        exc_info=True,
+                        extra={"event": "prompt_file_update_failed", "file_path": file_path},
+                    )
 
-    logger.info("Insertion process completed.")
+    logger.info("Insertion process completed", extra={"event": "prompt_patch_completed"})

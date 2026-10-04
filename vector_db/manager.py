@@ -1,6 +1,7 @@
 """
 Vector Database Manager with automatic collection creation
 """
+import logging
 import os
 from typing import Optional
 
@@ -11,6 +12,8 @@ from qdrant_client.models import Distance, FieldCondition, Filter, MatchValue, R
 
 
 load_dotenv()
+
+logger = logging.getLogger(__name__)
 
 def get_qdrant_client(timeout: Optional[float] = None) -> QdrantClient:
     """
@@ -33,14 +36,24 @@ def get_qdrant_client(timeout: Optional[float] = None) -> QdrantClient:
 
     # Prefer an explicit URL over host:port.
     if qdrant_url:
-        print(f"🌐 Connecting to Qdrant at: {qdrant_url}")
+        logger.info(
+            "Connecting to Qdrant via URL",
+            extra={"event": "qdrant_connecting", "qdrant_url": qdrant_url},
+        )
         return QdrantClient(
             url=qdrant_url,
             api_key=qdrant_api_key if qdrant_api_key else None,
             timeout=timeout,
         )
 
-    print(f"🏠 Connecting to Qdrant at: {qdrant_host}:{qdrant_port}")
+    logger.info(
+        "Connecting to Qdrant via host/port",
+        extra={
+            "event": "qdrant_connecting",
+            "qdrant_host": qdrant_host,
+            "qdrant_port": qdrant_port,
+        },
+    )
     return QdrantClient(
         host=qdrant_host,
         port=qdrant_port,
@@ -77,10 +90,20 @@ class QdrantVectorDB:
         # connection/auth errors and misreported them as "missing collection".
         if self.client.collection_exists(self.collection_name):
             info = self.client.get_collection(self.collection_name)
-            print(f"✓ Collection '{self.collection_name}' already exists ({info.points_count} documents)")
+            logger.info(
+                "Qdrant collection already exists",
+                extra={
+                    "event": "collection_exists",
+                    "collection": self.collection_name,
+                    "points_count": info.points_count,
+                },
+            )
             return
 
-        print(f"📦 Creating new collection: {self.collection_name}")
+        logger.info(
+            "Creating Qdrant collection",
+            extra={"event": "collection_creating", "collection": self.collection_name},
+        )
 
         # Get embedding dimension
         sample_embedding = self.embeddings.embed_query("test")
@@ -93,7 +116,14 @@ class QdrantVectorDB:
                 distance=Distance.COSINE
             )
         )
-        print(f"✓ Collection created with vector size: {vector_size}")
+        logger.info(
+            "Qdrant collection created",
+            extra={
+                "event": "collection_created",
+                "collection": self.collection_name,
+                "vector_size": vector_size,
+            },
+        )
     
     def add_documents(self, documents, ids=None):
         """Add or upsert documents; passing deterministic ids makes reruns idempotent"""

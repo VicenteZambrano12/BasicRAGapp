@@ -21,8 +21,18 @@ def load_memory_context(cache_key: str) -> Tuple[str, List[Dict[str, str]]]:
             memory_data = json.loads(memory_json)
             memory_summary = memory_data.get("summary", "")
             recent_turns = memory_data.get("recent", [])
-            logger.info(f"[CHAT] Loaded memory: {len(recent_turns)} recent turns")
+            logger.debug(
+                "Conversation memory loaded",
+                extra={
+                    "event": "memory_loaded",
+                    "recent_turns": len(recent_turns),
+                    "has_summary": bool(memory_summary),
+                },
+            )
         except json.JSONDecodeError:
-            logger.warning("[CHAT] Failed to parse memory JSON")
+            logger.warning(
+                "Failed to parse cached conversation memory, starting fresh",
+                extra={"event": "memory_parse_failed"},
+            )
 
     return memory_summary, recent_turns

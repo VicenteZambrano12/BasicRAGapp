@@ -23,8 +23,12 @@ def save_graph_config_to_cache(cache_key: str, category: str, subject: str) -> N
     graph_config_cache[cache_key] = payload
     try:
         redis_client.setex(f"config:{cache_key}", CONFIG_TTL_SECONDS, json.dumps(payload))
-    except Exception as exc:
-        logger.warning(f"[CACHE] Failed to persist config to cache backend: {exc}")
+    except Exception:
+        logger.warning(
+            "Failed to persist graph config to cache backend",
+            exc_info=True,
+            extra={"event": "cache_write_failed", "cache_namespace": "config"},
+        )
 
 
 def load_graph_config_from_cache(cache_key: str) -> Optional[Dict[str, str]]:
@@ -38,8 +42,12 @@ def load_graph_config_from_cache(cache_key: str) -> Optional[Dict[str, str]]:
             payload = json.loads(raw)
             graph_config_cache[cache_key] = payload
             return payload
-    except Exception as exc:
-        logger.warning(f"[CACHE] Failed to load config from cache backend: {exc}")
+    except Exception:
+        logger.warning(
+            "Failed to load graph config from cache backend",
+            exc_info=True,
+            extra={"event": "cache_read_failed", "cache_namespace": "config"},
+        )
 
     return None
 

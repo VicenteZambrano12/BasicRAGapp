@@ -17,8 +17,12 @@ class TokenCounter:
             import tiktoken
 
             self._encoding = tiktoken.get_encoding("cl100k_base")
-        except Exception as exc:
-            logger.warning(f"[TOKENS] tiktoken unavailable, falling back to word-count estimate: {exc}")
+        except Exception:
+            logger.warning(
+                "tiktoken unavailable, falling back to word-count token estimate",
+                exc_info=True,
+                extra={"event": "token_counter_fallback"},
+            )
             self._encoding = None
 
     def count_text(self, text: str) -> int:

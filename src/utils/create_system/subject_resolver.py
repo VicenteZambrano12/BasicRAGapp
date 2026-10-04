@@ -39,5 +39,8 @@ def resolve_collection(subject: str) -> str:
         return collection
 
     # Fallback for an unrecognized subject: normalize into a collection-like slug.
-    logger.warning(f"[CREATE_SYSTEM] Unknown subject label '{subject}', deriving collection slug")
+    logger.warning(
+        "Unknown subject label, deriving collection slug",
+        extra={"event": "subject_label_unknown", "subject": subject},
+    )
     return re.sub(r"[^a-z0-9]+", "", subject.strip().lower())

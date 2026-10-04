@@ -40,18 +40,28 @@ def _connect_real_redis():
 
 try:
     redis_client = _connect_real_redis()
-except Exception as exc:
-    logger.warning(f"[CACHE] Real Redis unreachable, falling back to fakeredis: {exc}")
+except Exception:
+    logger.warning(
+        "Real Redis unreachable, falling back to fakeredis",
+        exc_info=True,
+        extra={"event": "redis_fallback", "backend": "fakeredis"},
+    )
     redis_client = None
 
 if redis_client is not None:
     REDIS_ENABLED = True
-    logger.info("[CACHE] Connected to real Redis")
+    logger.info(
+        "Connected to Redis",
+        extra={"event": "redis_connected", "backend": "redis"},
+    )
 else:
     import fakeredis
 
     redis_client = fakeredis.FakeStrictRedis(decode_responses=True)
-    logger.info("[CACHE] REDIS_HOST/REDIS_URL not set or unreachable; using fakeredis (non-persistent)")
+    logger.warning(
+        "REDIS_HOST/REDIS_URL not set or unreachable; using non-persistent in-memory cache",
+        extra={"event": "redis_connected", "backend": "fakeredis"},
+    )
 
 
 def get_cache_key(session_id: str, category: str, subject: str) -> str:

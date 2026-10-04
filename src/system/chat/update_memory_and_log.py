@@ -20,14 +20,23 @@ def update_memory_and_log(
     if memory_user_content and response_text:
         try:
             update_conversation_memory(cache_key, memory_user_content, response_text)
-            logger.info("[CHAT] Memory updated")
-        except Exception as mem_error:
-            logger.error(f"[CHAT] Failed to update memory: {mem_error}")
+            logger.debug("Conversation memory updated", extra={"event": "memory_updated"})
+        except Exception:
+            logger.error(
+                "Failed to update conversation memory",
+                exc_info=True,
+                extra={"event": "memory_update_failed"},
+            )
 
     response_tokens = token_counter.count_text(response_text) if response_text else 0
 
-    logger.info("[TOKEN COUNT] ========== REQUEST SUMMARY ==========")
-    logger.info(f"[TOKEN COUNT] Initial input: {initial_input_tokens} tokens")
-    logger.info(f"[TOKEN COUNT] Total steps: {total_steps}")
-    logger.info(f"[TOKEN COUNT] Response: {response_tokens} tokens")
-    logger.info("[TOKEN COUNT] =====================================")
+    logger.info(
+        "Chat turn token usage",
+        extra={
+            "event": "token_usage",
+            "input_tokens": initial_input_tokens,
+            "response_tokens": response_tokens,
+            "total_tokens": initial_input_tokens + response_tokens,
+            "total_steps": total_steps,
+        },
+    )

@@ -18,7 +18,11 @@ def image_read(image_url: str) -> str:
     if is_configured():
         try:
             return vertex_image_read(image_url)
-        except Exception as exc:
-            logger.warning(f"[VISION] Self-deployed endpoint failed, falling back to Gemini: {exc}")
+        except Exception:
+            logger.warning(
+                "Self-deployed vision endpoint failed, falling back to Gemini",
+                exc_info=True,
+                extra={"event": "vision_fallback", "vision_backend": "vertex_self_deployed"},
+            )
 
     return gemini_image_read(image_url)

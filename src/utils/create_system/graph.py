@@ -28,11 +28,18 @@ logger = logging.getLogger(__name__)
 def _build_llm():
     """Use the self-deployed Vertex endpoint when configured, otherwise Gemini."""
     if vertex_is_configured():
-        logger.info("[CREATE_SYSTEM] Using self-deployed Vertex endpoint as the chat LLM")
+        logger.info(
+            "Using self-deployed Vertex endpoint as the chat LLM",
+            extra={"event": "llm_selected", "llm_backend": "vertex_self_deployed"},
+        )
         return VertexSelfDeployedLLM()
 
     llm_model = config("LLM_MODEL", default="gemini-2.5-flash-lite")
     api_key = config("GEMINI_API_KEY", default=None) or config("GCP_API_KEY", default=None)
+    logger.info(
+        "Using Gemini as the chat LLM",
+        extra={"event": "llm_selected", "llm_backend": "gemini", "llm_model": llm_model},
+    )
     return ChatGoogleGenerativeAI(model=llm_model, google_api_key=api_key)
 
 
@@ -41,7 +48,15 @@ def create_system(subject: str, community: str):
     collection = resolve_collection(subject)
     system_prompt = load_system_prompt(subject, community, collection)
 
-    logger.info(f"[CREATE_SYSTEM] Connecting retrieval to Qdrant collection '{collection}'")
+    logger.info(
+        "Connecting retrieval to Qdrant collection",
+        extra={
+            "event": "retrieval_connected",
+            "collection": collection,
+            "subject": subject,
+            "community": community,
+        },
+    )
     vector_store = get_vector_store(collection_name=collection, embeddings=get_embeddings())
 
     llm = _build_llm()
@@ -53,7 +68,15 @@ def create_system(subject: str, community: str):
         )
         query = extract_query_text(last_human).strip()
         documents = vector_store.similarity_search(query, k=4) if query else []
-        logger.info(f"[RETRIEVE] {len(documents)} chunk(s) retrieved for query: {query[:80]!r}")
+        logger.info(
+            "Retrieval completed",
+            extra={
+                "event": "documents_retrieved",
+                "collection": collection,
+                "document_count": len(documents),
+                "query_length": len(query),
+            },
+        )
         return {"documents": documents}
 
     def generate(state: GraphState):

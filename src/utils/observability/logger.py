@@ -124,7 +124,7 @@ def configure_logging(level: Optional[str] = None, json_logs: Optional[bool] = N
     root_logger.setLevel(resolved_level)
 
     # Quiet down noisy third-party loggers unless explicitly raised.
-    for noisy_logger in ("uvicorn.access",):
+    for noisy_logger in ("uvicorn.access", "httpx", "httpcore", "urllib3"):
         logging.getLogger(noisy_logger).setLevel(logging.WARNING)
 
     _configured = True

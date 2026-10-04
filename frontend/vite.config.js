@@ -11,6 +11,7 @@ export default defineConfig(({ mode }) => {
     plugins: [react()],
     server: {
       port: 3000,
+      
       // Only needed for LOCAL dev, where the frontend (vite) and backend
       // (uvicorn) run as separate servers; in GCP they share one container.
       proxy: isLocal
