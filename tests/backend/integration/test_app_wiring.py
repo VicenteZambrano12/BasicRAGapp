@@ -2,11 +2,22 @@
 
 import pytest
 
-from src.api.Endpoint import chat_endpoint
+from src.api.Endpoint import chat_endpoint, home_endpoint
 
 pytestmark = pytest.mark.integration
 
 CORRELATION_ID_HEADER = "X-Request-ID"
+
+
+@pytest.fixture(autouse=True)
+def qdrant_reachable(monkeypatch):
+    """These tests exercise middleware/error handling, not Qdrant connectivity; stub it as up."""
+
+    class FakeQdrantClient:
+        def get_collections(self):
+            return object()
+
+    monkeypatch.setattr(home_endpoint, "get_qdrant_client", lambda timeout=None: FakeQdrantClient())
 
 
 class TestCorrelationIdPropagation:
