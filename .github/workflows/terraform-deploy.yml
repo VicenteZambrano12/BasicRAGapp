@@ -108,6 +108,19 @@ jobs:
           path: ${{ env.TF_WORKING_DIR }}/tfplan
           retention-days: 1
 
+      # The qdrant_vm_starter module zips its Cloud Function source via
+      # data "archive_file" as a side effect of `terraform plan`. The saved
+      # tfplan only records the resulting hash/path, not the zip's bytes, and
+      # the apply job below runs on a separate, fresh checkout — so without
+      # this, `google_storage_bucket_object.start_vm_source` fails with
+      # "no such file or directory" because the zip never existed there.
+      - name: Upload function source zip artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: function-source-zip
+          path: infra/modules/qdrant_vm_starter/.build/start_vm.zip
+          retention-days: 1
+
   apply:
     needs: build-and-plan
     runs-on: ubuntu-latest
@@ -130,6 +143,12 @@ jobs:
         with:
           name: tfplan
           path: ${{ env.TF_WORKING_DIR }}
+
+      - name: Download function source zip artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: function-source-zip
+          path: infra/modules/qdrant_vm_starter/.build
 
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
