@@ -50,6 +50,19 @@ module "qdrant_vm" {
   common_labels = var.common_labels
 }
 
+# On-demand start/stop: public HTTP Cloud Function (called from the portfolio
+# React frontend) that boots qdrant-vm back up after the idle-shutdown
+# watchdog (see modules/qdrant_vm) has stopped it. Runs as the existing
+# portfolio-repo-sa — no dedicated service account is created.
+module "qdrant_vm_starter" {
+  source        = "../../modules/qdrant_vm_starter"
+  project_id    = var.project_id
+  region        = var.region
+  zone          = var.zone
+  vm_name       = "qdrant-vm"
+  common_labels = var.common_labels
+}
+
 module "cloudrun" {
   source                = "../../modules/cloudrun"
   project_id            = var.project_id
