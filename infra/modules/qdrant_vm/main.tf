@@ -95,13 +95,20 @@ resource "google_compute_instance" "qdrant_vm" {
       apt-get update
       apt-get install -y docker.io
 
-      docker run -d \
-        --name qdrant \
-        -p 6333:6333 \
-        -p 6334:6334 \
-        -v "$MOUNT_POINT:/qdrant/storage" \
-        --restart always \
-        qdrant/qdrant
+      # Idempotent: this script runs on every boot, and the container
+      # already exists after the first one (name conflict would abort
+      # the script under `set -e` before the watchdog is installed).
+      if docker inspect qdrant >/dev/null 2>&1; then
+        docker start qdrant || true
+      else
+        docker run -d \
+          --name qdrant \
+          -p 6333:6333 \
+          -p 6334:6334 \
+          -v "$MOUNT_POINT:/qdrant/storage" \
+          --restart always \
+          qdrant/qdrant
+      fi
 
       # --- On-demand start/stop: idle auto-shutdown watchdog ---
       # Installed here (rather than pushed externally via `gcloud compute
