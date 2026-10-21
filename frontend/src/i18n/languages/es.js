@@ -2,6 +2,7 @@ const es = {
   appTagline: 'Tu asistente IA para la PAU',
   backendUnavailable: 'No se pudo conectar con el backend. Algunas funciones pueden no estar disponibles.',
   backendStarting: 'Despertando la demo (puede tardar hasta un minuto si ha estado inactiva)...',
+  previewMode: 'Modo de vista previa: la conversación y las respuestas son simuladas localmente. No se usa el backend.',
   studyConfig: 'Configuración del Estudio',
   studyConfigHint: 'Personaliza el contexto de tus respuestas.',
   regionLabel: 'Selecciona tu Comunidad Autónoma:',

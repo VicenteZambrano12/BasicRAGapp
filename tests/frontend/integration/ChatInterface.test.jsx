@@ -48,6 +48,33 @@ describe('ChatInterface', () => {
       expect(screen.getByText('bold').tagName).toBe('STRONG');
     });
 
+    it('scrolls only the log to the start of a new answer and preserves manual scrolling on rerender', () => {
+      const { rerender, onSendMessage } = renderChat();
+      const log = screen.getByRole('log');
+      const bounds = vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect')
+        .mockImplementation(function () {
+          return { top: this === log ? 100 : 350 };
+        });
+      const messages = [{ id: 'new-answer', role: 'assistant', content: 'A new answer' }];
+      const props = { messages, onSendMessage, translations: es, isLoading: false, error: '' };
+
+      try {
+        log.scrollTop = 40;
+        rerender(<ChatInterface {...props} />);
+
+        expect(log.scrollTop).toBe(290);
+        expect(screen.getByText('A new answer').closest('.message-bubble').parentElement)
+          .toHaveClass('shrink-0');
+
+        log.scrollTop = 12;
+        rerender(<ChatInterface {...props} isLoading />);
+
+        expect(log.scrollTop).toBe(12);
+      } finally {
+        bounds.mockRestore();
+      }
+    });
+
     it('renders an attached image preview inside the message', () => {
       renderChat({
         messages: [{ id: '1', role: 'user', content: 'look', image: 'blob:preview' }],

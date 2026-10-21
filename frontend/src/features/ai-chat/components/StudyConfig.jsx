@@ -8,10 +8,10 @@
  */
 export const StudyConfig = ({ config, onConfigChange, communities, subjects, translations }) => {
   return (
-    <section className="flex flex-col gap-5 rounded-xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
+    <section className="study-panel flex flex-col gap-5 p-4 sm:p-6">
       <div>
-        <h2 className="text-xl font-bold tracking-tight text-slate-900">{translations.studyConfig}</h2>
-        <p className="mt-1 text-sm text-slate-600">{translations.studyConfigHint}</p>
+        <h2 className="display-heading text-xl font-bold text-slate-900">{translations.studyConfig}</h2>
+        <p className="mt-1.5 text-sm leading-relaxed text-slate-600">{translations.studyConfigHint}</p>
       </div>
       
       <div className="flex flex-col gap-2">
@@ -20,7 +20,7 @@ export const StudyConfig = ({ config, onConfigChange, communities, subjects, tra
           id="region"
           value={config.region}
           onChange={(e) => onConfigChange('region', e.target.value)}
-          className="min-h-11 rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-700 transition-shadow focus:border-blue-700 focus:outline-none focus:ring-4 focus:ring-blue-700/20"
+          className="study-select rounded-xl border px-3 py-2 text-sm transition-colors focus:outline-none focus:ring-2 focus:ring-emerald-700/20"
         >
           {communities.map((community) => (
             <option key={community} value={community}>{community}</option>
@@ -34,7 +34,7 @@ export const StudyConfig = ({ config, onConfigChange, communities, subjects, tra
           id="subject"
           value={config.subject}
           onChange={(e) => onConfigChange('subject', e.target.value)}
-          className="min-h-11 rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-700 transition-shadow focus:border-blue-700 focus:outline-none focus:ring-4 focus:ring-blue-700/20"
+          className="study-select rounded-xl border px-3 py-2 text-sm transition-colors focus:outline-none focus:ring-2 focus:ring-emerald-700/20"
         >
           {subjects.map((subject) => (
             <option key={subject} value={subject}>{subject}</option>
@@ -44,12 +44,12 @@ export const StudyConfig = ({ config, onConfigChange, communities, subjects, tra
 
       <fieldset className="mt-1 flex flex-col gap-2">
         <legend className="text-sm font-semibold text-slate-700">{translations.languageLabel}</legend>
-        <div className="flex overflow-hidden rounded-lg border border-slate-300" role="group">
+        <div className="language-switch flex overflow-hidden rounded-xl border p-1" role="group">
           <button 
             type="button"
             onClick={() => onConfigChange('language', 'ES')}
             aria-pressed={config.language === 'ES'}
-            className={`min-h-11 flex-1 px-3 py-2 text-sm font-semibold transition-colors focus:z-10 focus:outline-none focus:ring-4 focus:ring-blue-700/20 ${config.language === 'ES' ? 'bg-[#4F7396] text-white' : 'bg-slate-50 text-slate-700 hover:bg-slate-100'}`}
+            className="language-option flex-1 rounded-lg px-3 py-2 text-sm font-semibold focus:z-10 focus:outline-none focus:ring-2 focus:ring-emerald-700/30"
           >
             {translations.spanish}
           </button>
@@ -57,7 +57,7 @@ export const StudyConfig = ({ config, onConfigChange, communities, subjects, tra
             type="button"
             onClick={() => onConfigChange('language', 'EN')}
             aria-pressed={config.language === 'EN'}
-            className={`min-h-11 flex-1 border-l border-slate-300 px-3 py-2 text-sm font-semibold transition-colors focus:z-10 focus:outline-none focus:ring-4 focus:ring-blue-700/20 ${config.language === 'EN' ? 'bg-[#4F7396] text-white' : 'bg-slate-50 text-slate-700 hover:bg-slate-100'}`}
+            className="language-option flex-1 rounded-lg px-3 py-2 text-sm font-semibold focus:z-10 focus:outline-none focus:ring-2 focus:ring-emerald-700/30"
           >
             {translations.english}
           </button>

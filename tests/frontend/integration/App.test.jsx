@@ -40,6 +40,21 @@ describe('App (chat page)', () => {
     expect(await screen.findByText('¡Hola!')).toBeInTheDocument();
   });
 
+  it('renders a usable local preview without contacting the backend', async () => {
+    window.history.replaceState({}, '', '/?mock=1');
+
+    render(<App />);
+
+    expect(screen.getByRole('status')).toHaveTextContent(es.previewMode);
+    expect(screen.getByLabelText(es.regionLabel)).toHaveValue('Andalucía');
+    expect(await screen.findByText(/Bienvenido a la vista previa/)).toBeInTheDocument();
+    expect(api.checkHealth).not.toHaveBeenCalled();
+    expect(api.getConfig).not.toHaveBeenCalled();
+    expect(api.createSystem).not.toHaveBeenCalled();
+
+    window.history.replaceState({}, '', '/');
+  });
+
   it('drives a full question/answer round trip', async () => {
     render(<App />);
     await screen.findByText('¡Hola!');

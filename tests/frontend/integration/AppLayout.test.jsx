@@ -72,6 +72,32 @@ describe('AppLayout', () => {
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
   });
 
+  it('closes on Escape and returns focus to the opener', async () => {
+    renderLayout();
+    const opener = screen.getByRole('button', { name: es.howItWorks });
+
+    await userEvent.click(opener);
+    expect(screen.getByRole('button', { name: es.close })).toHaveFocus();
+
+    await userEvent.keyboard('{Escape}');
+
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    expect(opener).toHaveFocus();
+  });
+
+  it('keeps keyboard focus within the dialog', async () => {
+    renderLayout();
+    await userEvent.click(screen.getByRole('button', { name: es.howItWorks }));
+    const closeButton = screen.getByRole('button', { name: es.close });
+    const pdfFrame = screen.getByTitle(es.pdfTitle);
+
+    await userEvent.keyboard('{Shift>}{Tab}{/Shift}');
+    expect(pdfFrame).toHaveFocus();
+
+    await userEvent.keyboard('{Tab}');
+    expect(closeButton).toHaveFocus();
+  });
+
   it('closes the dialog when the backdrop is clicked', async () => {
     renderLayout();
     await userEvent.click(screen.getByRole('button', { name: es.howItWorks }));
