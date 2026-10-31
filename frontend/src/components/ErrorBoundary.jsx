@@ -30,17 +30,22 @@ export class ErrorBoundary extends React.Component {
   render() {
     if (this.state.hasError) {
       return (
-        <div className="min-h-screen flex items-center justify-center bg-[#F0F2F5] p-6">
-          <div className="max-w-md w-full bg-white rounded-xl shadow-sm border border-gray-200 p-6 text-center">
-            <div className="text-4xl mb-3" aria-hidden="true">⚠️</div>
-            <h1 className="text-xl font-bold text-[#1E3A8A] mb-2">Something went wrong</h1>
-            <p className="text-gray-500 text-sm mb-4">
+        <div className="app-shell flex min-h-screen items-center justify-center p-6">
+          <div className="study-panel w-full max-w-md p-7 text-center sm:p-9">
+            <div className="mx-auto mb-4 grid h-12 w-12 place-items-center rounded-2xl border border-red-200 bg-red-50 text-red-700" aria-hidden="true">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M12 3 2.8 19a1.4 1.4 0 0 0 1.2 2.1h16a1.4 1.4 0 0 0 1.2-2.1z" />
+                <path d="M12 9v4M12 17h.01" />
+              </svg>
+            </div>
+            <h1 className="display-heading mb-2 text-xl font-bold text-[#173f34]">Something went wrong</h1>
+            <p className="mb-5 text-sm leading-relaxed text-slate-600">
               An unexpected error occurred. Please try reloading the page.
             </p>
             <button
               type="button"
               onClick={this.handleReload}
-              className="inline-flex items-center gap-2 rounded-lg bg-[#1E3A8A] px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-blue-800 focus:outline-none focus:ring-2 focus:ring-blue-300"
+              className="send-button inline-flex min-h-11 items-center justify-center gap-2 rounded-xl px-5 py-2 text-sm font-semibold text-white transition-colors hover:bg-[#104d3d] focus:outline-none focus:ring-2 focus:ring-emerald-700/40"
             >
               Reload
             </button>

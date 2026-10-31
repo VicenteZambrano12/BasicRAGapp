@@ -28,6 +28,32 @@ describe('useChatStore', () => {
     vi.mocked(api.fileToDataUrl).mockResolvedValue('data:image/png;base64,AAA');
   });
 
+  describe('mock mode', () => {
+    it('shows a ready sample conversation without calling the backend', () => {
+      const { result } = renderHook(() => useChatStore({ mockMode: true }));
+
+      expect(result.current.isBackendStarting).toBe(false);
+      expect(result.current.isBackendAvailable).toBe(true);
+      expect(result.current.config).toMatchObject({ region: 'Andalucía', subject: 'Biología' });
+      expect(result.current.messages).toHaveLength(3);
+      expect(api.checkHealth).not.toHaveBeenCalled();
+      expect(api.getConfig).not.toHaveBeenCalled();
+      expect(api.createSystem).not.toHaveBeenCalled();
+    });
+
+    it('answers locally and switches the sample language without API requests', async () => {
+      const { result } = renderHook(() => useChatStore({ mockMode: true }));
+
+      act(() => result.current.updateConfig('language', 'EN'));
+      await waitFor(() => expect(result.current.messages[0].content).toContain('Welcome'));
+      await act(() => result.current.sendMessage('Explain photosynthesis'));
+
+      expect(result.current.messages.at(-1).content).toContain('local preview response');
+      expect(api.sendChatMessage).not.toHaveBeenCalled();
+      expect(api.fileToDataUrl).not.toHaveBeenCalled();
+    });
+  });
+
   describe('startup', () => {
     it('starts in the "backend starting" state', () => {
       vi.mocked(api.checkHealth).mockReturnValue(new Promise(() => {}));

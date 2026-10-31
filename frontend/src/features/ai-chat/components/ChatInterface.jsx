@@ -1,4 +1,4 @@
-﻿import React, { useState, useRef } from 'react';
+﻿import React, { useLayoutEffect, useState, useRef } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 
@@ -12,6 +12,21 @@ export const ChatInterface = ({ messages, onSendMessage, translations, isLoading
   const [input, setInput] = useState('');
   const [selectedImage, setSelectedImage] = useState(null);
   const fileInputRef = useRef(null);
+  const logRef = useRef(null);
+  const latestMessageRef = useRef(null);
+  const latestMessage = messages[messages.length - 1];
+
+  useLayoutEffect(() => {
+    const log = logRef.current;
+    const message = latestMessageRef.current;
+    if (!log || !message) return;
+
+    if (latestMessage?.role === 'assistant') {
+      log.scrollTop += message.getBoundingClientRect().top - log.getBoundingClientRect().top;
+    } else {
+      log.scrollTop = log.scrollHeight;
+    }
+  }, [latestMessage?.id]);
 
   const handleSend = () => {
     if (!input.trim() && !selectedImage) return;
@@ -30,21 +45,29 @@ export const ChatInterface = ({ messages, onSendMessage, translations, isLoading
   const canSend = Boolean(input.trim() || selectedImage) && !isLoading;
 
   return (
-    <section className="flex h-[min(42rem,calc(100dvh-9rem))] min-h-0 flex-col overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm sm:h-[min(44rem,calc(100dvh-10rem))] lg:h-full">
-      <div className="border-b border-slate-200 px-4 py-4 sm:px-5">
-        <h2 className="text-lg font-bold tracking-tight text-slate-900">{translations.chatTitle}</h2>
+    <section className="chat-panel flex h-[min(42rem,calc(100dvh-9rem))] min-h-0 flex-col overflow-hidden sm:h-[min(44rem,calc(100dvh-10rem))] lg:h-full">
+      <div className="chat-header flex shrink-0 items-center border-b border-slate-200 px-4 py-4 sm:px-5">
+        <h2 className="display-heading text-lg font-bold text-slate-900">{translations.chatTitle}</h2>
       </div>
       
-      <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto p-4 sm:p-5" aria-live="polite" aria-label={translations.messagesLabel}>
+      <div ref={logRef} className="chat-log flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto p-4 sm:p-5" role="log" aria-live="polite" aria-relevant="additions text" aria-label={translations.messagesLabel}>
         {messages.length === 0 && !isLoading && !error && (
-          <p className="m-auto max-w-sm text-center text-sm leading-relaxed text-slate-500">{translations.emptyChat}</p>
+          <div className="empty-state m-auto flex flex-col items-center gap-3 px-6 py-8 text-center sm:px-8">
+            <span className="empty-mark" aria-hidden="true">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v16H6.5A2.5 2.5 0 0 0 4 21.5z" />
+                <path d="M4 5.5v16M8 7h8M8 11h7" />
+              </svg>
+            </span>
+            <p className="max-w-sm text-sm leading-relaxed text-slate-600">{translations.emptyChat}</p>
+          </div>
         )}
         {messages.map((msg) => (
-          <div key={msg.id} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-            <div className={`max-w-[88%] break-words rounded-2xl p-3.5 text-sm leading-relaxed sm:max-w-[80%] ${
-              msg.role === 'user' 
-                ? 'bg-blue-100 text-blue-900 rounded-br-none whitespace-pre-wrap' 
-                : 'bg-gray-100 text-gray-800 rounded-bl-none'
+          <div key={msg.id} ref={msg.id === latestMessage?.id ? latestMessageRef : null} className={`flex min-w-0 shrink-0 ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+            <div className={`message-bubble max-w-[88%] break-words rounded-2xl p-3.5 text-sm leading-relaxed sm:max-w-[80%] ${
+              msg.role === 'user'
+                ? 'message-user rounded-br-md whitespace-pre-wrap'
+                : 'message-assistant rounded-bl-md'
             }`}>
               {msg.image && (
                 <img src={msg.image} alt={translations.uploadPreview} className="mb-2 max-h-64 max-w-full rounded-lg border border-slate-200 object-contain" />
@@ -57,19 +80,22 @@ export const ChatInterface = ({ messages, onSendMessage, translations, isLoading
                 </div>
               )}
               {msg.role === 'assistant' && msg.sources?.length > 0 && (
-                <div className="mt-3 border-t border-slate-200 pt-2">
-                  <p className="mb-1.5 text-[11px] font-semibold uppercase tracking-wide text-slate-500">{translations.sourcesLabel}</p>
+                <div className="mt-3 border-t border-slate-200 pt-2.5">
+                  <p className="mb-2 text-[11px] font-bold uppercase tracking-[0.1em] text-slate-500">{translations.sourcesLabel}</p>
                   <div className="flex flex-wrap gap-2">
                     {msg.sources.map((source) => (
                       <button
                         key={source.doc_id}
                         type="button"
                         onClick={() => window.open(`${source.url}#page=${source.page ?? 1}`, '_blank', 'noopener')}
-                        className="inline-flex items-center gap-1.5 rounded-full border border-blue-200 bg-blue-50 px-3 py-1 text-xs font-medium text-blue-800 transition-colors hover:border-blue-300 hover:bg-blue-100"
+                        className="citation-button inline-flex max-w-full items-center gap-1.5 rounded-lg border px-3 py-1.5 text-left text-xs font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-emerald-700/30"
                         title={source.file_name}
                       >
-                        <span aria-hidden="true">📄</span>
-                        {source.file_name}{source.page ? ` · p.${source.page}` : ''}
+                        <svg aria-hidden="true" className="shrink-0" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                          <path d="M14 2v6h6M8 13h8M8 17h8" />
+                        </svg>
+                        <span className="truncate">{source.file_name}{source.page ? ` · p.${source.page}` : ''}</span>
                       </button>
                     ))}
                   </div>
@@ -82,14 +108,14 @@ export const ChatInterface = ({ messages, onSendMessage, translations, isLoading
         {error && <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-800" role="alert">{error}</div>}
       </div>
 
-      <form className="flex flex-col gap-3 border-t border-slate-200 p-4 sm:p-5" onSubmit={(event) => { event.preventDefault(); handleSend(); }}>
+      <form className="chat-composer flex shrink-0 flex-col gap-3 border-t border-slate-200 p-3 sm:p-4" onSubmit={(event) => { event.preventDefault(); handleSend(); }}>
         {selectedImage && (
-          <div className="flex max-w-full items-center gap-2 self-start rounded-md bg-blue-50 px-3 py-1.5 text-xs text-blue-800">
+          <div className="flex max-w-full items-center gap-2 self-start rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-xs text-emerald-900">
             <span className="min-w-0 truncate">{selectedImage.name}</span>
             <button 
               type="button" 
               onClick={() => setSelectedImage(null)} 
-              className="ml-1 shrink-0 rounded px-1 font-bold text-red-700 transition-colors hover:bg-red-100 focus:outline-none focus:ring-2 focus:ring-red-600/40"
+              className="ml-1 grid h-8 w-8 shrink-0 place-items-center rounded-md text-lg font-medium text-red-700 transition-colors hover:bg-red-100 focus:outline-none focus:ring-2 focus:ring-red-600/40"
               aria-label={translations.removeImage}
             >
               ×
@@ -97,13 +123,12 @@ export const ChatInterface = ({ messages, onSendMessage, translations, isLoading
           </div>
         )}
 
-        <div className="flex items-center gap-2 rounded-lg border border-slate-300 bg-white p-2 transition-shadow focus-within:border-blue-700 focus-within:ring-4 focus-within:ring-blue-700/20">
+        <div className="composer-field flex items-center gap-2 rounded-xl border p-1.5 transition-shadow">
           <input
             id="chat-message"
             type="text"
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && handleSend()}
             placeholder={translations.inputPlaceholder}
             aria-label={translations.inputLabel}
             className="min-w-0 flex-1 bg-transparent px-2 text-sm text-slate-800 outline-none placeholder:text-slate-500"
@@ -121,7 +146,7 @@ export const ChatInterface = ({ messages, onSendMessage, translations, isLoading
           <button 
             type="button"
             onClick={() => fileInputRef.current && fileInputRef.current.click()}
-            className="rounded-md p-2 text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-900 focus:outline-none focus:ring-4 focus:ring-blue-700/20"
+            className="composer-button grid w-11 shrink-0 place-items-center rounded-xl text-slate-600 transition-colors hover:bg-emerald-50 hover:text-emerald-900 focus:outline-none focus:ring-2 focus:ring-emerald-700/30"
             aria-label={translations.attachImage}
             title={translations.attachImage}
           >
@@ -133,9 +158,8 @@ export const ChatInterface = ({ messages, onSendMessage, translations, isLoading
           </button>
           
           <button 
-            type="button"
-            onClick={handleSend}
-            className="min-h-11 rounded-lg bg-[#4F7396] px-5 py-2 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-[#3D5B78] focus:outline-none focus:ring-4 focus:ring-blue-700/30 disabled:cursor-not-allowed disabled:opacity-50"
+            type="submit"
+            className="composer-button send-button rounded-xl px-5 py-2 text-sm font-semibold text-white shadow-sm focus:outline-none focus:ring-2 focus:ring-emerald-700/40 disabled:cursor-not-allowed disabled:opacity-45"
             disabled={!canSend}
           >
             {translations.send} →

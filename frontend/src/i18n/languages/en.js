@@ -2,6 +2,7 @@ const en = {
   appTagline: 'Your AI assistant for the PAU',
   backendUnavailable: 'Unable to reach the backend service. Some features may not work.',
   backendStarting: 'Waking up the demo (this can take up to a minute if it has been idle)...',
+  previewMode: 'Preview mode: sample conversation and replies are simulated locally. No backend is used.',
   studyConfig: 'Study Configuration',
   studyConfigHint: 'Customize the context for your answers.',
   regionLabel: 'Select your autonomous community:',
