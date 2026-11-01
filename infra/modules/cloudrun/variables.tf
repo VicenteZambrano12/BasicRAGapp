@@ -32,3 +32,9 @@ variable "secret_id" {
 variable "common_labels" {
   type = map(string)
 }
+
+variable "qdrant_starter_url" {
+  description = "URL of the Cloud Function that starts the Qdrant VM."
+  type        = string
+  default     = ""
+}

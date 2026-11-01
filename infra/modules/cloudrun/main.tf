@@ -26,6 +26,11 @@ resource "google_cloud_run_v2_service" "backend" {
       }
 
       env {
+        name  = "QDRANT_STARTER_URL"
+        value = var.qdrant_starter_url
+      }
+
+      env {
         name  = "QDRANT_PORT"
         value = "6333"
       }

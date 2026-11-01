@@ -69,6 +69,7 @@ module "cloudrun" {
   region                = var.region
   serverless_subnet_id  = module.networking.serverless_subnet_id
   qdrant_internal_ip    = module.qdrant_vm.qdrant_internal_ip
+  qdrant_starter_url    = module.qdrant_vm_starter.cloud_function_url
   app_container_image   = var.app_container_image
   service_account_email = local.cloud_run_service_account_email
   secret_id             = module.secrets.secret_id

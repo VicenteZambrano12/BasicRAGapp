@@ -50,7 +50,7 @@ resource "google_cloudfunctions2_function" "start_vm" {
   service_config {
     max_instance_count             = 3
     min_instance_count             = 0
-    available_memory               = "256M"
+    available_memory               = "512M"
     timeout_seconds                = 60
     ingress_settings               = "ALLOW_ALL"
     all_traffic_on_latest_revision = true
